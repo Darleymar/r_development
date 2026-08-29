@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Meakusma 2026</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -131,10 +132,11 @@
   .meta i.clash{border-color:var(--ink);color:var(--ink)}
   .meta i.live-now{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .star{
-    position:absolute;right:0;top:12px;
-    background:none;border:0;padding:6px 0 0;font-size:19px;line-height:1;
-    cursor:pointer;color:var(--ink);opacity:.28;
+    position:absolute;right:-6px;top:10px;
+    background:none;border:0;padding:8px 6px;line-height:0;
+    cursor:pointer;color:var(--ink);opacity:.42;
   }
+  .star svg{display:block;width:21px;height:21px}
   .act.on .star{opacity:1}
   .act.on .name span{ box-shadow:inset 0 -9px 0 var(--marker) }
   .act.past .head{opacity:.45}
@@ -581,21 +583,28 @@ function toMinutes(str){
   return (+m[1]) * 60 + (m[2] ? +m[2] : 0);
 }
 
-/* '13–20H' -> {from:780, to:1200} ; '22H30' -> {from:1350, to:null} */
+/* '13–20H' -> {from:780, to:1200} ; '22H30' -> {from:1350, to:null}
+   Als Trenner wird alles akzeptiert, was weder Ziffer noch H ist — so überlebt
+   der Parser auch einen Gedankenstrich, den ein Browser falsch dekodiert hat. */
 function parseSlot(t){
-  const range = /^(\d{1,2})\s*[–—-]\s*(\d{1,2})\s*H$/.exec(t.trim());
+  const range = /^(\d{1,2})[^\dH]{1,4}(\d{1,2})\s*H$/.exec(t.trim());
   if (range) return { from:(+range[1]) * 60, to:(+range[2]) * 60 };
   return { from: toMinutes(t), to: null };
 }
 
 /* Startzeiten in fortlaufende Minuten ab 00:00 des Festivaltags umrechnen:
-   fällt die Uhrzeit gegenüber dem Vorgänger derselben Bühne, ist es die Nacht danach. */
+   fällt die Uhrzeit gegenüber dem Vorgänger derselben Bühne, ist es die Nacht danach.
+   Acts mit unlesbarer Zeit bleiben in der Liste — nur ohne Zeitlogik. */
 function buildIndex(){
   DAYS.forEach(day => {
     day.all = [];
     day.groups.forEach(group => {
       let prev = -1, base = 0;
       group.acts.forEach(a => {
+        a.group = group;
+        a.id    = day.id + '|' + group.stage + '|' + a.t + '|' + a.n;
+        day.all.push(a);
+
         const slot = parseSlot(a.t);
         if (slot.from === null){ a.start = null; a.end = null; return; }
         if (!group.specials){
@@ -604,33 +613,29 @@ function buildIndex(){
         }
         a.start = slot.from + base;
         a.end   = slot.to !== null ? slot.to + base + (slot.to <= slot.from ? 1440 : 0) : null;
-        a.group = group;
-        a.id    = day.id + '|' + group.stage + '|' + a.t + '|' + a.n;
-        day.all.push(a);
       });
       /* offene Endzeiten: bis zum nächsten Act derselben Bühne, gedeckelt */
       group.acts.forEach((a, i) => {
         if (a.start === null || a.end !== null) return;
-        const next = group.acts[i + 1];
-        a.end = next && next.start !== null
-          ? Math.min(next.start, a.start + MAX_SLOT)
-          : a.start + 90;
+        const next = group.acts.slice(i + 1).find(x => x.start !== null);
+        a.end = next ? Math.min(next.start, a.start + MAX_SLOT) : a.start + 90;
       });
-      group.acts.forEach(a => { a.allday = a.end - a.start >= ALLDAY; });
+      group.acts.forEach(a => {
+        a.allday = a.start !== null && a.end - a.start >= ALLDAY;
+      });
     });
-    day.all.sort((x, y) => x.start - y.start || x.group.stage.localeCompare(y.group.stage));
+    day.all.sort((x, y) =>
+      (x.start === null ? Infinity : x.start) - (y.start === null ? Infinity : y.start) ||
+      x.group.stage.localeCompare(y.group.stage));
   });
 }
 buildIndex();
 
-const byId = new Map();
-DAYS.forEach(d => d.all.forEach(a => byId.set(a.id, { act:a, day:d })));
-
 /* Überschneidungen unter den gemerkten Acts eines Tages */
 function clashesFor(act, day){
-  if (act.allday) return [];
+  if (act.allday || act.start === null) return [];
   return day.all.filter(o =>
-    o !== act && marked.has(o.id) && !o.allday &&
+    o !== act && o.start !== null && marked.has(o.id) && !o.allday &&
     act.start < o.end && o.start < act.end
   );
 }
@@ -766,11 +771,30 @@ function renderStages(day){
   }
 }
 
+/* Stern als SVG statt als Zeichen ★/☆ — so hängt die Darstellung weder an der
+   Schriftart des Geräts noch an einer korrekt dekodierten Datei. */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function starIcon(filled){
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', 'M12 3.2l2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.24l-5.5 2.89 1.05-6.12L3.1 9.67l6.15-.9z');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.6');
+  path.setAttribute('stroke-linejoin', 'round');
+  path.setAttribute('fill', filled ? 'currentColor' : 'none');
+  svg.appendChild(path);
+  return svg;
+}
+
 function actRow(act, day, nowMin, showStage){
   const row = document.createElement('div');
   row.className = 'act' + (marked.has(act.id) ? ' on' : '');
-  const running = nowMin !== null && nowMin >= act.start && nowMin < act.end;
-  if (nowMin !== null && nowMin >= act.end) row.classList.add('past');
+  const timed   = act.start !== null;
+  const running = timed && nowMin !== null && nowMin >= act.start && nowMin < act.end;
+  if (timed && nowMin !== null && nowMin >= act.end) row.classList.add('past');
 
   const head = document.createElement('button');
   head.className = 'head';
@@ -821,7 +845,7 @@ function actRow(act, day, nowMin, showStage){
   const star = document.createElement('button');
   star.className = 'star';
   star.type = 'button';
-  star.textContent = marked.has(act.id) ? '★' : '☆';
+  star.appendChild(starIcon(marked.has(act.id)));
   star.setAttribute('aria-label', (marked.has(act.id) ? 'Merken aufheben: ' : 'Merken: ') + act.n);
   star.addEventListener('click', ev => {
     ev.stopPropagation();
