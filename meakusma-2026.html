@@ -49,6 +49,10 @@
   }
   .lede{font-size:14.5px;color:var(--ink-soft);margin:0 0 12px}
   .lede a{color:var(--ink);text-underline-offset:3px}
+  .lede.hint{
+    font-size:13px;border-left:3px solid var(--rule);
+    padding:2px 0 2px 10px;margin:-4px 0 14px;
+  }
 
   /* ---- Tagesumschalter ---- */
   .days{
@@ -157,6 +161,13 @@
     border:1.5px solid var(--ink);border-radius:999px;padding:8px 12px;
   }
   .links a:active{background:var(--ink);color:var(--paper)}
+  .links .copy{
+    font:600 12.5px/1 'Archivo',sans-serif;
+    color:var(--ink-soft);background:transparent;
+    border:1.5px dashed var(--rule);border-radius:999px;padding:8px 12px;
+    cursor:pointer;
+  }
+  .links .copy.done{border-style:solid;border-color:var(--ink);color:var(--ink)}
 
   .empty{padding:28px 0;color:var(--ink-soft);font-size:14.5px}
   .foot{margin-top:34px;padding-top:14px;border-top:3px solid var(--ink);font-size:12.5px;color:var(--ink-soft)}
@@ -174,6 +185,8 @@
   </div>
 
   <p class="lede">Antippen für Kurzbeschreibung und Such-Links. Der Stern merkt sich deine Auswahl im Browser. Zum Vorhören gibt es außerdem die offizielle Festival-Playlist auf <a href="https://www.meakusma-festival.be/" target="_blank" rel="noopener">meakusma-festival.be</a>.</p>
+
+  <p class="lede hint">Landet ein Link in der Bandcamp- oder SoundCloud-App auf deren Startseite statt beim Suchergebnis: „Name kopieren“ antippen und in der App einfügen. Wer ganz im Browser bleiben will, hält den Link lange gedrückt und wählt „In neuem Tab öffnen“.</p>
 
   <div class="days" id="days"></div>
 
@@ -722,11 +735,35 @@ function save(){
  * Rendern
  * ------------------------------------------------------------------ */
 const enc = encodeURIComponent;
+/* Spotify steht vorn, weil seine App den Suchbegriff aus der URL zuverlaessig
+   uebernimmt. Bandcamp und SoundCloud verschlucken ihn beim Sprung in die App
+   haeufig — dafuer gibt es den Kopieren-Knopf. */
 const services = [
+  ['Spotify',    q => `https://open.spotify.com/search/${enc(q)}`],
   ['Bandcamp',   q => `https://bandcamp.com/search?q=${enc(q)}`],
   ['YouTube',    q => `https://www.youtube.com/results?search_query=${enc(q)}`],
   ['SoundCloud', q => `https://soundcloud.com/search?q=${enc(q)}`],
 ];
+
+/* Namen in die Zwischenablage — Rettungsanker, wenn eine App auf ihrer
+   Startseite landet statt beim Suchergebnis: dort einfach einfuegen. */
+function copyToClipboard(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand && document.execCommand('copy');
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error('copy failed'));
+  });
+}
 
 function renderDays(){
   daysEl.innerHTML = '';
@@ -875,6 +912,25 @@ function actRow(act, day, nowMin, showStage){
       link.textContent = label;
       links.appendChild(link);
     });
+
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.className = 'copy';
+    copy.textContent = 'Name kopieren';
+    copy.setAttribute('aria-label', 'Namen kopieren: ' + subject);
+    copy.addEventListener('click', ev => {
+      ev.stopPropagation();
+      copyToClipboard(subject).then(
+        () => { copy.textContent = 'kopiert'; copy.classList.add('done'); },
+        () => { copy.textContent = 'ging nicht'; }
+      );
+      setTimeout(() => {
+        copy.textContent = 'Name kopieren';
+        copy.classList.remove('done');
+      }, 1600);
+    });
+    links.appendChild(copy);
+
     box.append(b, links);
     body.appendChild(box);
   });
