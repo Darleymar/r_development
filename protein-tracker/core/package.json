@@ -1,0 +1,17 @@
+{
+  "name": "@protein-tracker/core",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./schema.sql": "./src/schema.sql"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^11.8.1"
+  }
+}

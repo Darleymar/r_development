@@ -1,37 +1,36 @@
 # Protein-Tracker
 
-Prototyp zum Erfassen der täglichen Proteinaufnahme für zwei Nutzer im
-Krafttraining. Der Tagesbedarf ist nicht konstant, sondern hängt davon ab, ob
-an diesem oder am Vortag trainiert wurde.
+Prototyp zum Erfassen der täglichen Proteinaufnahme für Krafttraining. Der
+Tagesbedarf ist nicht konstant, sondern hängt davon ab, ob an diesem oder am
+Vortag trainiert wurde.
+
+Die App läuft **vollständig im Gerät**: kein Server, kein Konto, keine
+Übertragung. Alle Daten liegen lokal in einer SQLite-Datenbank, die als
+WebAssembly im Browser beziehungsweise in der Android-App läuft.
 
 ## Schnellstart
 
 ```bash
 npm install
-npm run seed      # optional: Demodaten für die letzten drei Wochen
-npm run dev       # API auf :3001, Frontend auf :5173
+npm run dev      # http://localhost:5173
+npm test         # 36 Tests, Schwerpunkt Bedarfslogik
 ```
 
-Für einen einzelnen Prozess im Heimnetz:
-
-```bash
-npm run build && npm start   # Server liefert API und gebautes Frontend auf :3001
-```
+Zum Ausprobieren unter *Profil → Daten → Demodaten laden* drei Wochen
+Beispielverlauf erzeugen.
 
 | Befehl | Wirkung |
 |---|---|
-| `npm run dev` | API und Vite-Dev-Server parallel |
-| `npm run build` | Frontend nach `web/dist` bauen |
-| `npm start` | API inkl. gebautem Frontend auf `:3001` |
-| `npm test` | 31 Tests, Schwerpunkt Bedarfslogik |
-| `npm run seed` | Demodaten (überschreibt Bewegungsdaten) |
-
-Die Datenbank liegt als SQLite-Datei unter `server/data/protein.db`
-(`PT_DB` setzt einen anderen Pfad).
+| `npm run dev` | Entwicklungsserver |
+| `npm run build` | Baut nach `web/dist` |
+| `npm test` | Tests des Kerns |
+| `npm run android:sync` | Baut und überträgt ins Android-Projekt |
+| `npm run android:apk` | Baut die Debug-APK (Android SDK nötig) |
+| `npm run android:open` | Öffnet das Projekt in Android Studio |
 
 ## Die Bedarfsrechnung
 
-Der Kern steht in [`server/src/targets.js`](server/src/targets.js):
+Der Kern steht in [`core/src/targets.js`](core/src/targets.js):
 
 ```
 trainingsnah = (Trainingseinheit an D) ODER (Trainingseinheit an D-1)
@@ -57,7 +56,7 @@ einem festen Wochenplan, passt es sich der realen Frequenz an:
 | 2 | 4 | 1,83 g/kg |
 | 1 | 2 | 1,71 g/kg |
 
-Diese drei Werte sind als Test hinterlegt (`test/targets.test.js`).
+Diese drei Werte sind als Test hinterlegt.
 
 ### Einfrieren
 
@@ -67,26 +66,42 @@ Tag einträgt, ändert damit nichts mehr an abgeschlossenen Zielen – sonst wä
 die Historie für Auswertungen unbrauchbar.
 
 - **Heute** wird live gerechnet und als Zeile mit `frozen = 0` gehalten.
-- **Vergangene Tage** friert der erste Zugriff nach Mitternacht ein
-  (`freezePastTargets`), begrenzt auf 400 Tage rückwirkend.
+- **Vergangene Tage** friert der erste Zugriff nach Mitternacht ein,
+  begrenzt auf 400 Tage rückwirkend.
 - **Zukünftige Tage** werden für die Planung gerechnet, aber nicht gespeichert.
 
 Datumsarithmetik läuft über UTC-Mittag, damit Sommerzeitwechsel keine Tage
-verschieben. Das Gerät schickt sein lokales Datum als `today` mit, damit eine
-abweichende Server-Zeitzone den Tageswechsel nicht verrückt.
+verschieben.
 
 ## Aufbau
 
 ```
-server/   Express + SQLite (better-sqlite3)
-  src/targets.js     Bedarfslogik und Einfrieren
+core/     Schema, Bedarfslogik und Datenzugriff – ohne Laufzeitabhängigkeiten
+  src/targets.js     Bedarfsrechnung und Einfrieren
   src/schema.sql     Tabellen
-  src/routes/        Profile, Produkte, Vorlagen, Trainings, Log, Auswertung, OFF-Proxy
-  test/              31 Tests
+  src/repo/          Profile, Produkte, Vorlagen, Trainings, Log, Auswertung
+  src/backup.js      Export und Import
+  test/              36 Tests
 web/      React + Vite als PWA
-  src/screens/       Heute, Eintragen, Produkte, Vorlagen, Verlauf, Profil
-  src/components/    Fortschritt, Scanner, Formulare, Diagramm
+  src/lib/sqlite-adapter.js   SQLite-WebAssembly hinter der better-sqlite3-Schnittstelle
+  src/lib/db.js               Datenbank im Gerät, gesichert in IndexedDB
+  src/screens/                Heute, Eintragen, Produkte, Vorlagen, Verlauf, Profil
+android/  Capacitor-Projekt für die APK
 ```
+
+### Warum ein eigenes `core`
+
+`core` ist gegen die synchrone Schnittstelle von `better-sqlite3` geschrieben.
+Im Gerät liegt darunter [sql.js](https://sql.js.org/) – SQLite als
+WebAssembly – über einen Adapter mit derselben Schnittstelle
+(`web/src/lib/sqlite-adapter.js`).
+
+Dadurch laufen die Tests unter Node gegen echtes SQLite und prüfen exakt den
+Code, den auch die App ausführt. Es gibt keine zweite Fassung der Logik, die
+auseinanderlaufen könnte.
+
+Gespeichert wird die SQLite-Datei als Ganzes in IndexedDB, gebündelt nach
+Schreibvorgängen und zusätzlich beim Wegschalten der App.
 
 ## Funktionen
 
@@ -98,85 +113,80 @@ web/      React + Vite als PWA
   Häufigkeit und letzter Verwendung.
 - **Vorlagen** – wiederkehrende Kombinationen mit einem Tap loggen.
 - **Verlauf** – rollierender 7-Tage-Schnitt, Balkendiagramm gegen das jeweilige
-  Tagesziel, Zielerreichung getrennt nach trainingsnahen Tagen und Ruhetagen.
-- **Profil** – Umschalten, Gewicht, Gewichtsverlauf, Faktoren. Keine
-  Authentifizierung, wie für den Prototyp vorgesehen.
+  Tagesziel, Zielerreichung getrennt nach Tagtyp.
+- **Profil** – Umschalten, Gewicht, Gewichtsverlauf, Faktoren, Sicherung.
+
+### Sicherung
+
+Weil die Daten nur auf dem Gerät liegen, ist der Export unter *Profil → Daten*
+die einzige Absicherung gegen Geräteverlust – und zugleich der Weg auf ein
+zweites Gerät. Der Import ersetzt den gesamten Bestand; schlägt er fehl, bleibt
+der bisherige Stand unangetastet.
 
 ### Barcode-Scan
 
-Bevorzugt die native `BarcodeDetector`-API, sonst wird `@zxing/browser`
-nachgeladen (eigener Chunk, nur beim Scannen). Der Lookup läuft über
-`GET /api/off/:barcode`:
+Bevorzugt die native `BarcodeDetector`-API, sonst `@zxing/browser` als eigener
+Chunk. Der Ablauf:
 
 1. Ist der Code schon in der Bibliothek, gewinnt der eigene Eintrag.
-2. Sonst fragt der Server Open Food Facts und **übernimmt die Werte als
-   Vorbelegung eines editierbaren Formulars**. Die Datenqualität dort schwankt;
-   fehlt der Proteinwert, sagt die App das und verlangt eine Eingabe, statt
-   einen Wert zu erfinden.
+2. Sonst wird Open Food Facts gefragt und die Werte **als Vorbelegung eines
+   editierbaren Formulars** übernommen. Die Datenqualität dort schwankt; fehlt
+   der Proteinwert, sagt die App das und verlangt eine Eingabe, statt einen
+   Wert zu erfinden.
 3. Unbekannte oder nicht erreichbare Codes führen direkt ins Anlegeformular,
    der Barcode ist vorbelegt.
 
-Kamerazugriff funktioniert im Browser nur über HTTPS (localhost ausgenommen).
-Als Rückfalltür gibt es immer die manuelle Eingabe des Codes.
+Das ist der einzige Teil, der eine Verbindung braucht. Ohne Netz funktioniert
+alles andere unverändert weiter.
 
-## Vom Handy im Heimnetz
+Im Browser ist für den Kamerazugriff HTTPS nötig (localhost ausgenommen); in
+der Android-App entfällt das, weil die Inhalte aus dem App-Paket kommen.
 
-Auf dem Handy läuft nichts – der Server läuft auf dem Rechner, das Handy ist
-nur der Browser. Beide müssen im selben WLAN sein.
+## Die APK bauen
 
-```bash
-npm run build && npm start
-```
+Das Android-Projekt liegt fertig konfiguriert unter `android/` – mit
+Kameraberechtigung, App-Icons und passender Anwendungs-ID.
 
-Der Start gibt die Netzwerkadresse gleich mit aus, z. B.
-`http://192.168.1.42:3001`. Die am Handy öffnen. Blockt die Firewall des
-Rechners den Port, ist das meist die Ursache, wenn die Seite nicht lädt.
-
-Über eine LAN-IP ohne HTTPS gilt der Ursprung dem Browser nicht als sicher.
-Das schränkt drei Dinge ein:
-
-| | HTTP über LAN-IP | HTTPS über LAN-IP |
-|---|---|---|
-| App bedienen, loggen, Verlauf | ja | ja |
-| Barcode per Kamera scannen | **nein** | ja |
-| Zum Startbildschirm hinzufügen | **nein** | ja |
-| Offline-Fähigkeit (Service Worker) | **nein** | ja |
-
-Ohne HTTPS bleibt die manuelle Eingabe des Barcodes, die im Scan-Dialog
-ohnehin immer als Feld darunter steht.
-
-### HTTPS einrichten
+Voraussetzung ist ein Android SDK, am einfachsten über
+[Android Studio](https://developer.android.com/studio). Danach:
 
 ```bash
-mkcert -install
-mkcert 192.168.1.42 localhost                          # eigene IP einsetzen
-PT_TLS_CERT=cert.pem PT_TLS_KEY=key.pem npm start      # zusätzlich auf :3443
+npm install
+npm run android:apk
 ```
 
-**Das Zertifikat muss auch das Handy kennen.** Sonst registriert der Browser
-den Service Worker nicht (`SecurityError: An SSL certificate error occurred
-when fetching the script`) und „zum Startbildschirm hinzufügen“ fehlt – die
-Seite selbst lädt trotzdem, was die Ursache gut versteckt. Dafür die Datei aus
-`mkcert -CAROOT` (`rootCA.pem`) aufs Handy übertragen und als vertrauenswürdig
-installieren:
+Die Datei liegt anschließend unter
+`android/app/build/outputs/apk/debug/app-debug.apk` und lässt sich per USB
+oder Dateiübertragung aufs Handy bringen. Zum Installieren muss dort einmalig
+„Unbekannte Quellen“ beziehungsweise „Apps aus dieser Quelle zulassen“
+aktiviert werden.
 
-- **iOS:** Datei öffnen → Profil installieren, danach zusätzlich unter
-  *Einstellungen → Allgemein → Info → Zertifikatsvertrauenseinstellungen*
-  aktivieren. Der zweite Schritt wird leicht übersehen.
-- **Android:** *Einstellungen → Sicherheit → Weitere Einstellungen →
-  Verschlüsselung → Zertifikat installieren → CA-Zertifikat*.
+Alternativ `npm run android:open` und in Android Studio auf *Run* – das ist
+für den ersten Lauf bequemer, weil Studio fehlende SDK-Teile selbst nachlädt.
 
-Der Service Worker wird nur im gebauten Frontend registriert, nicht unter
-`npm run dev` – für den PWA-Test also `npm run build && npm start` verwenden.
+Nach jeder Änderung am Frontend `npm run android:sync` ausführen, damit das
+Android-Projekt den neuen Stand bekommt.
 
-Für den Dev-Server dieselben Zertifikatsdateien als `web/certs/cert.pem` und
-`web/certs/key.pem` ablegen, dann startet Vite automatisch mit TLS.
+Für eine signierte Release-APK gilt der übliche Weg über einen eigenen
+Keystore (`./gradlew assembleRelease`). Keystores sind bewusst über
+`.gitignore` ausgeschlossen.
+
+## Auch ohne APK
+
+Der gebaute Ordner `web/dist` ist eine reine statische Seite. Sie lässt sich
+auf jedem Gerät öffnen, das einen Browser hat, und über „zum Startbildschirm
+hinzufügen“ wie eine App installieren – ebenfalls ohne Server, mit denselben
+lokalen Daten.
 
 ## Bewusst nicht enthalten
 
 Kalorien- und Makro-Auswertung über Protein hinaus (die Felder sind da),
-Authentifizierung, Cloud-Sync, Übungs- und Volumen-Tracking, Rezeptimport,
-Foto-Erkennung, Wearable-Anbindung.
+Authentifizierung, Abgleich zwischen Geräten, Übungs- und Volumen-Tracking,
+Rezeptimport, Foto-Erkennung, Wearable-Anbindung.
+
+Da jedes Gerät seine eigenen Daten hält, ist die gemeinsame Produktbibliothek
+auf ein geteiltes Gerät beschränkt. Für zwei Geräte ist der Export/Import der
+vorgesehene Weg.
 
 ## Hinweis
 

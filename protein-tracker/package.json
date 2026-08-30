@@ -1,19 +1,23 @@
 {
   "name": "protein-tracker",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "workspaces": ["server", "web"],
+  "workspaces": [
+    "core",
+    "web"
+  ],
   "scripts": {
-    "dev": "concurrently -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
-    "dev:server": "npm run dev --workspace server",
-    "dev:web": "npm run dev --workspace web",
+    "dev": "npm run dev --workspace web",
     "build": "npm run build --workspace web",
-    "start": "npm run start --workspace server",
-    "test": "npm run test --workspace server",
-    "seed": "npm run seed --workspace server"
+    "preview": "npm run preview --workspace web",
+    "test": "npm test --workspace core",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0"
   }
 }

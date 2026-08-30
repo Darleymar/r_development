@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
 import { useAsync, useProfile } from '../lib/store.jsx';
 import { fmt, longDate } from '../lib/date.js';
+import DataSection from '../components/DataSection.jsx';
 
 const asNumber = (v) => Number(String(v).replace(',', '.'));
 
@@ -175,6 +176,8 @@ export default function Settings() {
           Für jeden Tag gilt der zuletzt davor eingetragene Wert – so bleiben alte Ziele nachvollziehbar.
         </p>
       </div>
+
+      <DataSection onChanged={async () => { await reloadUsers(); setReload((r) => r + 1); refresh(); }} />
 
       <div className="card stack">
         <h2>Hinweis</h2>
