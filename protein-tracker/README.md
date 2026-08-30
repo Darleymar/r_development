@@ -142,13 +142,39 @@ alles andere unverändert weiter.
 Im Browser ist für den Kamerazugriff HTTPS nötig (localhost ausgenommen); in
 der Android-App entfällt das, weil die Inhalte aus dem App-Paket kommen.
 
-## Die APK bauen
+## Auf das Handy bringen
+
+Zwei Wege. Beide brauchen keinen laufenden Server – die App und ihre Daten
+liegen anschließend vollständig auf dem Gerät.
+
+### Weg 1: als installierte Web-App (ohne Android Studio, auch für iPhone)
+
+Der gebaute Ordner `web/dist` ist eine rein statische Seite und läuft auf
+jedem statischen Speicherort, auch in einem Unterverzeichnis.
+
+Am einfachsten über GitHub Pages:
+
+1. Im Repository unter **Settings → Pages** die *Source* auf
+   „GitHub Actions“ stellen.
+2. Unter **Actions → „Protein-Tracker veröffentlichen“ → Run workflow**
+   den Build starten. Der Workflow ist bewusst nur manuell auslösbar –
+   ohne diesen Klick geht nichts online.
+3. Die angezeigte Adresse auf dem Handy öffnen und zum Startbildschirm
+   hinzufügen: in Chrome über *Menü → App installieren*, in Safari über
+   *Teilen → Zum Home-Bildschirm*.
+
+Danach startet die App wie eine installierte App, im Vollbild und ohne
+Adressleiste. Ab dem ersten Öffnen läuft sie offline weiter.
+
+Veröffentlicht wird dabei nur das Programm. Ihre Einträge entstehen erst auf
+dem Gerät und werden nie übertragen – die Seite kennt sie nicht.
+
+### Weg 2: als APK
 
 Das Android-Projekt liegt fertig konfiguriert unter `android/` – mit
-Kameraberechtigung, App-Icons und passender Anwendungs-ID.
-
-Voraussetzung ist ein Android SDK, am einfachsten über
-[Android Studio](https://developer.android.com/studio). Danach:
+Kameraberechtigung, App-Icons und passender Anwendungs-ID. Nötig ist ein
+Android SDK, am einfachsten über
+[Android Studio](https://developer.android.com/studio):
 
 ```bash
 npm install
@@ -158,25 +184,25 @@ npm run android:apk
 Die Datei liegt anschließend unter
 `android/app/build/outputs/apk/debug/app-debug.apk` und lässt sich per USB
 oder Dateiübertragung aufs Handy bringen. Zum Installieren muss dort einmalig
-„Unbekannte Quellen“ beziehungsweise „Apps aus dieser Quelle zulassen“
-aktiviert werden.
+„Apps aus dieser Quelle zulassen“ aktiviert werden.
 
-Alternativ `npm run android:open` und in Android Studio auf *Run* – das ist
-für den ersten Lauf bequemer, weil Studio fehlende SDK-Teile selbst nachlädt.
+Für den ersten Lauf ist `npm run android:open` bequemer, weil Android Studio
+fehlende SDK-Teile selbst nachlädt.
 
 Nach jeder Änderung am Frontend `npm run android:sync` ausführen, damit das
-Android-Projekt den neuen Stand bekommt.
+Android-Projekt den neuen Stand bekommt. Für eine signierte Release-APK gilt
+der übliche Weg über einen eigenen Keystore (`./gradlew assembleRelease`);
+Keystores sind über `.gitignore` ausgeschlossen.
 
-Für eine signierte Release-APK gilt der übliche Weg über einen eigenen
-Keystore (`./gradlew assembleRelease`). Keystores sind bewusst über
-`.gitignore` ausgeschlossen.
+### Welcher Weg wofür
 
-## Auch ohne APK
-
-Der gebaute Ordner `web/dist` ist eine reine statische Seite. Sie lässt sich
-auf jedem Gerät öffnen, das einen Browser hat, und über „zum Startbildschirm
-hinzufügen“ wie eine App installieren – ebenfalls ohne Server, mit denselben
-lokalen Daten.
+| | Web-App | APK |
+|---|---|---|
+| Aufwand | ein Klick im Repository | Android Studio einrichten |
+| Geräte | Android, iPhone, Desktop | nur Android |
+| Kamera-Scan | ja (über HTTPS) | ja |
+| Offline | ja, ab dem ersten Öffnen | ja |
+| Aktualisieren | von selbst beim Öffnen | neue APK installieren |
 
 ## Bewusst nicht enthalten
 

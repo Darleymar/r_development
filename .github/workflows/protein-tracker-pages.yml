@@ -1,0 +1,58 @@
+# Veroeffentlicht den Protein-Tracker als statische Seite auf GitHub Pages,
+# damit er sich auf jedem Handy ueber "zum Startbildschirm hinzufuegen"
+# installieren laesst - ohne Android Studio und ohne laufenden Rechner.
+#
+# Bewusst NUR manuell ausloesbar: erst wenn Sie in Actions auf "Run workflow"
+# klicken, geht etwas online. Die Seite enthaelt ausschliesslich die App
+# selbst; Ihre Eintraege bleiben auf dem Geraet und werden nie uebertragen.
+#
+# Einmalig noetig: Settings -> Pages -> Source auf "GitHub Actions" stellen.
+name: Protein-Tracker veröffentlichen
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: protein-tracker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: protein-tracker/package-lock.json
+
+      - run: npm ci
+
+      - name: Tests der Bedarfslogik
+        run: npm test
+
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: protein-tracker/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
