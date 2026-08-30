@@ -119,15 +119,58 @@ nachgeladen (eigener Chunk, nur beim Scannen). Der Lookup läuft über
 Kamerazugriff funktioniert im Browser nur über HTTPS (localhost ausgenommen).
 Als Rückfalltür gibt es immer die manuelle Eingabe des Codes.
 
-### HTTPS im Heimnetz
+## Vom Handy im Heimnetz
+
+Auf dem Handy läuft nichts – der Server läuft auf dem Rechner, das Handy ist
+nur der Browser. Beide müssen im selben WLAN sein.
 
 ```bash
-mkcert -install && mkcert 192.168.1.42 localhost      # eigene IP einsetzen
-PT_TLS_CERT=cert.pem PT_TLS_KEY=key.pem npm start     # zusätzlich auf :3443
+npm run build && npm start
 ```
 
-Für den Dev-Server dieselben Dateien als `web/certs/cert.pem` und
-`web/certs/key.pem` ablegen – Vite startet dann automatisch mit TLS.
+Der Start gibt die Netzwerkadresse gleich mit aus, z. B.
+`http://192.168.1.42:3001`. Die am Handy öffnen. Blockt die Firewall des
+Rechners den Port, ist das meist die Ursache, wenn die Seite nicht lädt.
+
+Über eine LAN-IP ohne HTTPS gilt der Ursprung dem Browser nicht als sicher.
+Das schränkt drei Dinge ein:
+
+| | HTTP über LAN-IP | HTTPS über LAN-IP |
+|---|---|---|
+| App bedienen, loggen, Verlauf | ja | ja |
+| Barcode per Kamera scannen | **nein** | ja |
+| Zum Startbildschirm hinzufügen | **nein** | ja |
+| Offline-Fähigkeit (Service Worker) | **nein** | ja |
+
+Ohne HTTPS bleibt die manuelle Eingabe des Barcodes, die im Scan-Dialog
+ohnehin immer als Feld darunter steht.
+
+### HTTPS einrichten
+
+```bash
+mkcert -install
+mkcert 192.168.1.42 localhost                          # eigene IP einsetzen
+PT_TLS_CERT=cert.pem PT_TLS_KEY=key.pem npm start      # zusätzlich auf :3443
+```
+
+**Das Zertifikat muss auch das Handy kennen.** Sonst registriert der Browser
+den Service Worker nicht (`SecurityError: An SSL certificate error occurred
+when fetching the script`) und „zum Startbildschirm hinzufügen“ fehlt – die
+Seite selbst lädt trotzdem, was die Ursache gut versteckt. Dafür die Datei aus
+`mkcert -CAROOT` (`rootCA.pem`) aufs Handy übertragen und als vertrauenswürdig
+installieren:
+
+- **iOS:** Datei öffnen → Profil installieren, danach zusätzlich unter
+  *Einstellungen → Allgemein → Info → Zertifikatsvertrauenseinstellungen*
+  aktivieren. Der zweite Schritt wird leicht übersehen.
+- **Android:** *Einstellungen → Sicherheit → Weitere Einstellungen →
+  Verschlüsselung → Zertifikat installieren → CA-Zertifikat*.
+
+Der Service Worker wird nur im gebauten Frontend registriert, nicht unter
+`npm run dev` – für den PWA-Test also `npm run build && npm start` verwenden.
+
+Für den Dev-Server dieselben Zertifikatsdateien als `web/certs/cert.pem` und
+`web/certs/key.pem` ablegen, dann startet Vite automatisch mit TLS.
 
 ## Bewusst nicht enthalten
 
