@@ -6,7 +6,7 @@
  *   PT_DB=:memory: npm run seed
  */
 import { openDb } from './db.js';
-import { addDays, serverToday } from './targets.js';
+import { addDays, computeTarget, serverToday } from './targets.js';
 
 const db = openDb();
 const today = process.argv[2] ?? serverToday();
@@ -15,12 +15,12 @@ const PRODUCTS = [
   ['Magerquark',            'Milbona',   '4056489123456', 12.0,  67, 250],
   ['Skyr Natur',            'Arla',      '5711953068904', 11.0,  63, 150],
   ['Whey Protein Vanille',  'ESN',       '4260375870011', 78.0, 375,  30],
-  ['Huettenkaese',          'Exquisa',   null,            13.0, 100, 200],
-  ['Haehnchenbrustfilet',   null,        null,            23.0, 108, 150],
+  ['Hüttenkäse',          'Exquisa',   null,            13.0, 100, 200],
+  ['Hähnchenbrustfilet',   null,        null,            23.0, 108, 150],
   ['Rinderhackfleisch 5%',  null,        null,            21.0, 133, 150],
   ['Lachsfilet',            null,        null,            20.0, 208, 125],
   ['Vollkornbrot',          'Harry',     null,             7.0, 220,  50],
-  ['Haferflocken',          'Koelln',    null,            13.5, 372,  80],
+  ['Haferflocken',          'Kölln',    null,            13.5, 372,  80],
   ['Vollmilch 3,5%',        null,        null,             3.4,  64, 200],
   ['Banane',                null,        null,             1.1,  93, 120],
   ['Eier (Gr. M)',          null,        null,            12.6, 137,  60],
@@ -31,8 +31,8 @@ const PRODUCTS = [
 
 const TEMPLATES = [
   ['Shake nach dem Training', [['Vollmilch 3,5%', 300], ['Whey Protein Vanille', 30], ['Banane', 120]]],
-  ['Fruehstuecksquark',       [['Magerquark', 250], ['Haferflocken', 60], ['Banane', 100]]],
-  ['Abendessen Standard',     [['Haehnchenbrustfilet', 180], ['Linsen, gekocht', 200]]],
+  ['Frühstücksquark',       [['Magerquark', 250], ['Haferflocken', 60], ['Banane', 100]]],
+  ['Abendessen Standard',     [['Hähnchenbrustfilet', 180], ['Linsen, gekocht', 200]]],
 ];
 
 const insertProduct = db.prepare(
@@ -55,6 +55,8 @@ db.transaction(() => {
   }
 
   const idOf = (name) => db.prepare('SELECT id FROM products WHERE name = ?').get(name).id;
+  const proteinOf = (name) =>
+    db.prepare('SELECT protein_per_100g AS p FROM products WHERE name = ?').get(name).p;
 
   for (const [name, items] of TEMPLATES) {
     const tplId = db.prepare('INSERT INTO meal_templates (name) VALUES (?)').run(name).lastInsertRowid;
@@ -77,7 +79,7 @@ db.transaction(() => {
   // sich die Zielverlaeufe im Diagramm sichtbar.
   const pattern = [[1, 3, 5], [1, 4]];
   const menu = [
-    ['Magerquark', 250], ['Haferflocken', 60], ['Haehnchenbrustfilet', 180],
+    ['Magerquark', 250], ['Haferflocken', 60], ['Hähnchenbrustfilet', 180],
     ['Eier (Gr. M)', 120], ['Vollkornbrot', 100], ['Skyr Natur', 150],
     ['Whey Protein Vanille', 30], ['Linsen, gekocht', 200], ['Thunfisch in Wasser', 140],
   ];
@@ -86,22 +88,38 @@ db.transaction(() => {
     insertWeight.run(user.id, addDays(today, -21), user.weight_kg - 1);
     insertWeight.run(user.id, addDays(today, -7), user.weight_kg);
 
+    // Erst alle Trainings, damit das Tagesziel danach schon feststeht.
     for (let back = 21; back >= 0; back -= 1) {
       const date = addDays(today, -back);
       const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
-
       if (pattern[u % 2].includes(weekday)) {
-        insertWorkout.run(user.id, date, back % 7 === 0 ? 'Ganzkoerper' : null);
+        insertWorkout.run(user.id, date, back % 7 === 0 ? 'Ganzkörper' : null);
       }
+    }
 
-      // Drei bis vier Mahlzeiten, leicht schwankend – mal wird das Ziel
-      // erreicht, mal knapp verfehlt.
-      const meals = 3 + ((back + u) % 2);
-      for (let m = 0; m < meals; m += 1) {
-        const [name, amount] = menu[(back * 3 + m + u) % menu.length];
-        const status = back === 0 && m === meals - 1 ? 'planned' : 'eaten';
-        insertLog.run(user.id, date, idOf(name), amount, status);
-      }
+    // Zielerreichung zwischen 78 % und 112 % – trainingsnahe Tage bewusst
+    // etwas schwaecher, damit die Auswertung nach Tagtyp etwas zu zeigen hat.
+    const spread = [1.02, 0.95, 1.08, 0.86, 1.0, 0.91, 1.06, 0.82, 0.98, 1.11, 0.89];
+
+    for (let back = 21; back >= 0; back -= 1) {
+      const date = addDays(today, -back);
+      const { target_g: target, was_training_adjacent: adjacent } = computeTarget(db, user.id, date);
+
+      const factor = spread[(back + u * 3) % spread.length] - (adjacent ? 0.09 : 0);
+      const wanted = target * factor;
+
+      // Vier Mahlzeiten aus dem Menue, danach so skaliert, dass die
+      // Tagessumme in die Naehe des Ziels kommt.
+      const meals = [0, 1, 2, 3].map((m) => menu[(back * 3 + m + u) % menu.length]);
+      const base = meals.reduce((sum, [name, amount]) => sum + amount * proteinOf(name) / 100, 0);
+      const scale = base > 0 ? wanted / base : 1;
+
+      meals.forEach(([name, amount], m) => {
+        const grams = Math.max(20, Math.round((amount * scale) / 5) * 5);
+        // Am laufenden Tag steht die letzte Mahlzeit noch als geplant aus.
+        const status = back === 0 && m >= 2 ? 'planned' : 'eaten';
+        insertLog.run(user.id, date, idOf(name), grams, status);
+      });
     }
   });
 })();

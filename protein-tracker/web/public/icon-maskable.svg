@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Protein-Tracker">
+  <rect width="192" height="192" fill="#2a78d6"/>
+  <g fill="none" stroke="#fcfcfb" stroke-width="12" stroke-linecap="round">
+    <path d="M62 78v36M130 78v36"/>
+    <path d="M48 90v12M144 90v12"/>
+    <path d="M62 96h68"/>
+  </g>
+</svg>
