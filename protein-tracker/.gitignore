@@ -1,0 +1,14 @@
+node_modules/
+web/dist/
+*.db
+*.db-wal
+*.db-shm
+.DS_Store
+
+# Signaturschluessel gehoeren nicht ins Repository
+*.jks
+*.keystore
+android/keystore.properties
+
+# Zertifikate fuer die lokale HTTPS-Entwicklung
+web/certs/

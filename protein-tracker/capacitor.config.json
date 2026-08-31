@@ -1,0 +1,13 @@
+{
+  "appId": "de.proteintracker.app",
+  "appName": "Protein-Tracker",
+  "webDir": "web/dist",
+  "android": {
+    "buildOptions": {
+      "keystorePath": null
+    }
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
