@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensureProfiles } from '../src/index.js';
+import { ensureProfiles, migrate } from '../src/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA = fs.readFileSync(path.join(here, '..', 'src', 'schema.sql'), 'utf8');
@@ -16,6 +16,7 @@ export function testDb({ profiles = true } = {}) {
   const db = new Database(':memory:');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  migrate(db);
   if (profiles) ensureProfiles(db);
   return db;
 }

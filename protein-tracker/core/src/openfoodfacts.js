@@ -9,6 +9,7 @@ import { AppError, bad } from './validate.js';
 
 const BARCODE = /^\d{8,14}$/;
 const BASE_URL = 'https://world.openfoodfacts.org/api/v2/product';
+const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
 const FIELDS = [
   'code', 'product_name', 'product_name_de', 'brands', 'nutriments',
   'serving_size', 'serving_quantity', 'quantity',
@@ -87,4 +88,51 @@ export async function lookupBarcode(barcode, { request } = {}) {
     return { found: false, source: 'openfoodfacts', barcode: code, warnings: [] };
   }
   return { found: true, source: 'openfoodfacts', barcode: code, ...mapOffProduct(body.product, code) };
+}
+
+/**
+ * Suche nach dem Namen, fuer Markenprodukte ohne Barcode zur Hand.
+ *
+ * Ergaenzt den eingebauten Grundstock, ersetzt ihn nicht: Grundzutaten sind
+ * ohnehin lokal vorhanden, hier geht es um konkrete Produkte. Treffer ohne
+ * Proteinwert kommen ans Ende und werden als solche gekennzeichnet – die
+ * Datenlage bei Open Food Facts ist uneinheitlich.
+ */
+export async function searchByName(query, { request, limit = 20 } = {}) {
+  const terms = String(query ?? '').trim();
+  if (terms.length < 2) throw bad('Bitte mindestens zwei Zeichen eingeben.');
+
+  const params = new URLSearchParams({
+    search_terms: terms,
+    search_simple: '1',
+    action: 'process',
+    json: '1',
+    lc: 'de',
+    page_size: String(Math.min(Math.max(limit, 1), 50)),
+    fields: FIELDS,
+  });
+
+  let response;
+  try {
+    response = await request(`${SEARCH_URL}?${params}`);
+  } catch {
+    throw new AppError(
+      502,
+      'Open Food Facts ist gerade nicht erreichbar – das Produkt laesst sich manuell anlegen.'
+    );
+  }
+
+  if (response.status < 200 || response.status >= 300) {
+    throw new AppError(502, `Open Food Facts antwortete mit HTTP ${response.status}.`);
+  }
+
+  const body = await response.json();
+  const products = Array.isArray(body?.products) ? body.products : [];
+
+  const results = products
+    .map((raw) => mapOffProduct(raw, String(raw?.code ?? '').trim() || null))
+    .filter((r) => r.product.name)
+    .sort((a, b) => (b.product.protein_per_100g !== null) - (a.product.protein_per_100g !== null));
+
+  return { query: terms, count: results.length, results };
 }

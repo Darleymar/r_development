@@ -75,12 +75,20 @@ export const api = {
     return core.lookupBarcode(barcode, { request });
   }),
 
+  /** Namenssuche bei Open Food Facts – braucht als Einziges eine Verbindung. */
+  searchOnline: (query) => core.searchByName(query, { request }),
+
   // --------------------------------------------------------------- Sicherung
   exportBackup: withDb(core.exportData),
   importBackup: withDb(async (db, backup) => {
     const counts = core.importData(db, backup);
     await flush();
     return counts;
+  }),
+  addStarterFoods: withDb(async (db) => {
+    const n = core.ensureStarterFoods(db);
+    await flush();
+    return n;
   }),
   loadDemoData: withDb(async (db, today) => {
     const n = core.seedDemoData(db, today);

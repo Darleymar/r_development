@@ -17,6 +17,7 @@ export default function ProductForm({ initial = {}, warnings = [], onSubmit, onC
     protein_per_100g: initial.protein_per_100g ?? '',
     kcal_per_100g: initial.kcal_per_100g ?? '',
     default_serving_g: initial.default_serving_g ?? '',
+    category: initial.category ?? '',
     is_favorite: !!initial.is_favorite,
   });
   const [error, setError] = useState(null);
@@ -45,6 +46,7 @@ export default function ProductForm({ initial = {}, warnings = [], onSubmit, onC
         protein_per_100g: protein,
         kcal_per_100g: asNumber(form.kcal_per_100g),
         default_serving_g: asNumber(form.default_serving_g),
+        category: form.category.trim() || null,
         source: initial.source ?? 'manual',
         is_favorite: form.is_favorite,
       });
@@ -87,11 +89,18 @@ export default function ProductForm({ initial = {}, warnings = [], onSubmit, onC
         </label>
       </div>
 
-      <label className="field">
-        <span>Übliche Portion in Gramm</span>
-        <input value={form.default_serving_g ?? ''} onChange={set('default_serving_g')}
-               inputMode="decimal" placeholder="optional" />
-      </label>
+      <div className="field-row">
+        <label className="field">
+          <span>Übliche Portion in Gramm</span>
+          <input value={form.default_serving_g ?? ''} onChange={set('default_serving_g')}
+                 inputMode="decimal" placeholder="optional" />
+        </label>
+        <label className="field">
+          <span>Kategorie</span>
+          <input value={form.category ?? ''} onChange={set('category')}
+                 placeholder="z. B. Getreide" autoComplete="off" />
+        </label>
+      </div>
 
       <label className="row small">
         <input type="checkbox" checked={form.is_favorite} onChange={set('is_favorite')}

@@ -25,6 +25,8 @@ export default function AddEntry() {
   const [notice, setNotice] = useState(null);
   const [error, setError] = useState(null);
   const [reload, setReload] = useState(0);
+  const [online, setOnline] = useState(null);        // Treffer von Open Food Facts
+  const [searching, setSearching] = useState(false);
 
   const { data: products, loading } = useAsync(
     () => api.products({ q: query || undefined, limit: 40 }),
@@ -66,12 +68,34 @@ export default function AddEntry() {
     }
   }
 
+  /**
+   * Online nachschlagen. Der Grundstock und die eigene Bibliothek decken den
+   * Alltag ab; das hier ist fuer Markenprodukte, deren Packung gerade nicht
+   * zur Hand ist.
+   */
+  async function searchOnline() {
+    setSearching(true);
+    setError(null);
+    setNotice(null);
+    setOnline(null);
+    try {
+      const res = await api.searchOnline(query);
+      setOnline(res.results);
+      if (res.count === 0) setNotice(`Keine Treffer für „${query}“ bei Open Food Facts.`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSearching(false);
+    }
+  }
+
   async function createProduct(body) {
     const product = await api.createProduct(body);
     setMode(null);
     setDraft(null);
     setWarnings([]);
     setReload((r) => r + 1);
+    setOnline(null);
     setSelected(product);
   }
 
@@ -133,7 +157,7 @@ export default function AddEntry() {
                   {p.is_favorite ? '★ ' : ''}{p.name}
                 </div>
                 <div className="tiny muted truncate">
-                  {[p.brand, `${fmt(p.protein_per_100g, 1)} g/100 g`,
+                  {[p.brand || p.category, `${fmt(p.protein_per_100g, 1)} g/100 g`,
                     p.use_count > 0 ? `${p.use_count}×` : null].filter(Boolean).join(' · ')}
                 </div>
               </div>
@@ -141,7 +165,50 @@ export default function AddEntry() {
             </button>
           ))}
         </div>
+
+        {query.trim().length >= 2 && (
+          <button className="btn-ghost btn-sm" onClick={searchOnline} disabled={searching}>
+            {searching ? 'Sucht online …' : 'Online bei Open Food Facts suchen'}
+          </button>
+        )}
       </div>
+
+      {online && online.length > 0 && (
+        <div className="card stack">
+          <h2>Treffer bei Open Food Facts</h2>
+          <p className="tiny muted" style={{ margin: 0 }}>
+            Werte werden übernommen und lassen sich vor dem Speichern prüfen.
+          </p>
+          <div className="list">
+            {online.map((hit, i) => (
+              <button
+                key={hit.product.barcode ?? i}
+                className="list-item"
+                onClick={() => {
+                  setDraft(hit.product);
+                  setWarnings(hit.warnings);
+                  setMode('create');
+                }}
+              >
+                <div className="grow">
+                  <div className="truncate">{hit.product.name}</div>
+                  <div className="tiny muted truncate">
+                    {[hit.product.brand,
+                      hit.product.protein_per_100g === null
+                        ? 'kein Proteinwert hinterlegt'
+                        : `${fmt(hit.product.protein_per_100g, 1)} g/100 g`,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+                <span className="muted">+</span>
+              </button>
+            ))}
+          </div>
+          <button className="btn-ghost btn-sm" onClick={() => setOnline(null)}>
+            Treffer ausblenden
+          </button>
+        </div>
+      )}
 
       {mode === 'scan' && (
         <Sheet title="Barcode scannen" onClose={() => setMode(null)}>

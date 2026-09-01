@@ -7,6 +7,7 @@
  */
 import { addDays, computeTarget, serverToday } from './targets.js';
 import { ensureProfiles } from './index.js';
+import { ensureStarterFoods } from './foods.js';
 
 const PRODUCTS = [
   ['Magerquark',            'Milbona',   '4056489123456', 12.0,  67, 250],
@@ -50,6 +51,8 @@ export function seedDemoData(db, today = serverToday()) {
     for (const [i, p] of PRODUCTS.entries()) {
       insertProduct.run(...p, p[2] ? 'openfoodfacts' : 'manual', i < 3 ? 1 : 0);
     }
+    // Der Grundstock gehoert zur Ausstattung, nicht zu den Demodaten.
+    ensureStarterFoods(db);
 
     const idOf = (name) => db.prepare('SELECT id FROM products WHERE name = ?').get(name).id;
     const proteinOf = (name) =>

@@ -105,6 +105,28 @@ export default function DataSection({ onChanged }) {
 
       <div className="field-row">
         <button
+          onClick={() => run('starter', async () => {
+            const n = await api.addStarterFoods();
+            setNotice(n === 0
+              ? 'Alle Grundnahrungsmittel sind bereits in der Bibliothek.'
+              : `${n} Grundnahrungsmittel ergänzt.`);
+            onChanged?.();
+          })}
+          disabled={busy !== null}
+        >
+          {busy === 'starter' ? 'Ergänzt …' : 'Grundnahrungsmittel ergänzen'}
+        </button>
+      </div>
+
+      <p className="tiny muted" style={{ margin: 0 }}>
+        Trägt fehlende Grundzutaten wie Haferflocken oder Sojadrink nach. Eigene Produkte und
+        selbst angepasste Werte bleiben unangetastet. Die mitgelieferten Nährwerte sind
+        Richtwerte für die übliche Zusammensetzung – für ein bestimmtes Markenprodukt gilt
+        die Packungsangabe, die sich jederzeit eintragen lässt.
+      </p>
+
+      <div className="field-row">
+        <button
           onClick={() => run('demo', async () => {
             const n = await api.loadDemoData(todayISO());
             setNotice(`${n} Beispiel-Einträge für die letzten drei Wochen geladen.`);

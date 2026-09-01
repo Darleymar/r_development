@@ -18,6 +18,8 @@ function readProduct(input, defaults = {}) {
     default_serving_g: input.default_serving_g !== undefined
       ? num(input.default_serving_g, 'default_serving_g', { min: 0.1, max: 5000, required: false })
       : defaults.default_serving_g ?? null,
+    category: input.category !== undefined
+      ? str(input.category, 'category', { required: false, max: 60 }) : defaults.category ?? null,
     source: input.source !== undefined
       ? oneOf(input.source, 'source', ['openfoodfacts', 'manual'])
       : defaults.source ?? 'manual',
@@ -52,7 +54,7 @@ export function listProducts(db, { q, favorites, limit } = {}) {
   const max = num(limit, 'limit', { min: 1, max: 500, required: false }) ?? 200;
 
   const clauses = [];
-  if (query) clauses.push('(p.name LIKE @like OR p.brand LIKE @like OR p.barcode = @q)');
+  if (query) clauses.push('(p.name LIKE @like OR p.brand LIKE @like OR p.category LIKE @like OR p.barcode = @q)');
   if (favorites === true || favorites === '1' || favorites === 'true') clauses.push('p.is_favorite = 1');
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
 
@@ -78,9 +80,9 @@ export function createProduct(db, input = {}) {
   }
   const info = db.prepare(
     `INSERT INTO products (name, brand, barcode, protein_per_100g, kcal_per_100g,
-                           default_serving_g, source, is_favorite)
+                           default_serving_g, category, source, is_favorite)
      VALUES (@name, @brand, @barcode, @protein_per_100g, @kcal_per_100g,
-             @default_serving_g, @source, @is_favorite)`
+             @default_serving_g, @category, @source, @is_favorite)`
   ).run(p);
   return db.prepare('SELECT * FROM products WHERE id = ?').get(info.lastInsertRowid);
 }
@@ -98,7 +100,8 @@ export function updateProduct(db, id, input = {}) {
   db.prepare(
     `UPDATE products SET name = @name, brand = @brand, barcode = @barcode,
             protein_per_100g = @protein_per_100g, kcal_per_100g = @kcal_per_100g,
-            default_serving_g = @default_serving_g, source = @source, is_favorite = @is_favorite
+            default_serving_g = @default_serving_g, category = @category,
+            source = @source, is_favorite = @is_favorite
       WHERE id = @id`
   ).run({ ...p, id: productId });
   return db.prepare('SELECT * FROM products WHERE id = ?').get(productId);

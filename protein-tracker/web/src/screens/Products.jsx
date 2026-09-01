@@ -43,7 +43,7 @@ export default function Products() {
         <label className="field">
           <span>Suche</span>
           <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
-                 placeholder="Name oder Marke" autoComplete="off" />
+                 placeholder="Name, Marke oder Kategorie" autoComplete="off" />
         </label>
 
         <div className="row-between">
@@ -80,11 +80,10 @@ export default function Products() {
                 <div className="grow" style={{ textAlign: 'left' }}>
                   <div className="truncate">{p.name}</div>
                   <div className="tiny muted truncate">
-                    {[p.brand,
-                      `${fmt(p.protein_per_100g, 1)} g Protein/100 g`,
+                    {[p.brand || p.category,
+                      `${fmt(p.protein_per_100g, 1)} g/100 g`,
                       p.kcal_per_100g ? `${fmt(p.kcal_per_100g)} kcal` : null,
-                      p.use_count > 0 ? `${p.use_count}× verwendet` : 'noch nie verwendet',
-                      p.source === 'openfoodfacts' ? 'OFF' : null,
+                      p.use_count > 0 ? `${p.use_count}×` : null,
                     ].filter(Boolean).join(' · ')}
                   </div>
                 </div>

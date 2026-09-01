@@ -32,6 +32,9 @@ CREATE TABLE IF NOT EXISTS products (
   protein_per_100g  REAL    NOT NULL,
   kcal_per_100g     REAL,
   default_serving_g REAL,
+  -- Grobe Einordnung ("Getreide", "Milchprodukte"). Nur zum Blaettern in der
+  -- Bibliothek; fuer Markenangaben ist brand zustaendig.
+  category          TEXT,
   source            TEXT    NOT NULL DEFAULT 'manual'
                             CHECK (source IN ('openfoodfacts','manual')),
   is_favorite       INTEGER NOT NULL DEFAULT 0 CHECK (is_favorite IN (0,1)),

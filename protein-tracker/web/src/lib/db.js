@@ -1,7 +1,7 @@
 import initSqlJs from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import schemaSql from '@protein-tracker/core/schema.sql?raw';
-import { ensureProfiles } from '@protein-tracker/core';
+import { ensureProfiles, ensureStarterFoods, migrate } from '@protein-tracker/core';
 import { createAdapter } from './sqlite-adapter.js';
 import { loadBytes, saveBytes, clearBytes } from './storage.js';
 
@@ -61,7 +61,15 @@ export function openDatabase() {
     // Das Schema ist idempotent (CREATE TABLE IF NOT EXISTS) und darf bei
     // jedem Start laufen – so wachsen spaetere Tabellen von selbst mit.
     handle.exec(schemaSql);
+    migrate(handle);
     ensureProfiles(handle);
+
+    // Nur beim allerersten Start: der Grundstock gaengiger Lebensmittel,
+    // damit nicht jede Zutat von Hand angelegt werden muss. Spaeter laesst
+    // er sich in den Einstellungen nachtragen, ohne Eigenes anzuruehren.
+    const { n } = handle.prepare('SELECT COUNT(*) AS n FROM products').get();
+    if (n === 0) ensureStarterFoods(handle);
+
     await flush();
 
     return handle;

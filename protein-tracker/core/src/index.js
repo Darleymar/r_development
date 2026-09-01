@@ -16,7 +16,7 @@ export * from './repo/workouts.js';
 export * from './repo/templates.js';
 export * from './repo/stats.js';
 export * from './backup.js';
-export { lookupBarcode, mapOffProduct, isBarcode } from './openfoodfacts.js';
+export { lookupBarcode, searchByName, mapOffProduct, isBarcode } from './openfoodfacts.js';
 
 /**
  * Legt bei leerer Datenbank zwei Profile an – der Prototyp soll ohne
@@ -34,3 +34,5 @@ export function ensureProfiles(db) {
   })();
 }
 export { seedDemoData } from './demo.js';
+export { STARTER_FOODS, ensureStarterFoods } from './foods.js';
+export { migrate } from './migrate.js';

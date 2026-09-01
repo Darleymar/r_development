@@ -32,7 +32,7 @@ export default function AmountSheet({ product, date, onCancel, onSubmit }) {
     <Sheet title={product.name} onClose={onCancel}>
       <form className="stack" onSubmit={submit}>
         <p className="small muted" style={{ margin: 0 }}>
-          {product.brand ? `${product.brand} · ` : ''}
+          {product.brand || product.category ? `${product.brand || product.category} · ` : ''}
           {fmt(product.protein_per_100g, 1)} g Protein je 100 g
         </p>
 

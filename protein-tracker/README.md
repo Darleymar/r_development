@@ -110,7 +110,8 @@ Schreibvorgängen und zusätzlich beim Wegschalten der App.
 - **Eintragen** – Barcode scannen, Bibliothek durchsuchen oder manuell anlegen;
   danach Menge und Status. Auch für kommende Tage planbar.
 - **Produkte** – gemeinsame Bibliothek beider Profile, sortiert nach Favoriten,
-  Häufigkeit und letzter Verwendung.
+  Häufigkeit und letzter Verwendung. Beim ersten Start bereits mit über 100
+  Grundnahrungsmitteln gefüllt.
 - **Vorlagen** – wiederkehrende Kombinationen mit einem Tap loggen.
 - **Verlauf** – rollierender 7-Tage-Schnitt, Balkendiagramm gegen das jeweilige
   Tagesziel, Zielerreichung getrennt nach Tagtyp.
@@ -122,6 +123,34 @@ Weil die Daten nur auf dem Gerät liegen, ist der Export unter *Profil → Daten
 die einzige Absicherung gegen Geräteverlust – und zugleich der Weg auf ein
 zweites Gerät. Der Import ersetzt den gesamten Bestand; schlägt er fehl, bleibt
 der bisherige Stand unangetastet.
+
+### Woher die Nährwerte kommen
+
+Drei Quellen, in dieser Reihenfolge:
+
+1. **Eingebauter Grundstock.** Über 100 gängige Lebensmittel sind ab dem ersten
+   Start in der Bibliothek – Haferflocken, Sojadrink, Quark, Linsen, Tofu,
+   Hähnchenbrust und so weiter, mit Protein, kcal und üblicher Portionsgröße.
+   Damit lässt sich ein Porridge loggen, ohne eine Packung zur Hand zu haben
+   oder Nährwerte abzutippen. Die Liste steht in
+   [`core/src/foods.js`](core/src/foods.js).
+
+   Es sind **Richtwerte für die übliche Zusammensetzung**, keine Angaben zu
+   einem bestimmten Markenprodukt, und sie sind jederzeit editierbar. Wer es
+   genauer braucht, überschreibt sie mit der Packungsangabe. Unter
+   *Profil → Daten → Grundnahrungsmittel ergänzen* lassen sich fehlende
+   Einträge nachtragen; vorhandene und selbst angepasste Produkte bleiben
+   dabei unangetastet.
+
+2. **Barcode-Scan** für konkrete Markenprodukte (siehe unten).
+
+3. **Namenssuche bei Open Food Facts**, wenn die Packung nicht zur Hand ist.
+   Im Eintragen-Screen unterhalb der Bibliothekssuche. Braucht als Einziges
+   eine Verbindung; Treffer ohne Proteinwert werden als solche gekennzeichnet
+   und ans Ende sortiert.
+
+Jedes einmal erfasste Produkt landet in der Bibliothek und ist danach ohne
+erneutes Nachschlagen verfügbar.
 
 ### Barcode-Scan
 
