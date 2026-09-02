@@ -1,0 +1,41 @@
+{
+  "label": {
+    "id": null,
+    "name": "Underground Resistance",
+    "include_sublabels": true
+  },
+  "user_agent": "URKatalog/0.1 +http://localhost",
+  "db": "urkatalog.db",
+  "dedupe": {
+    "prefer_formats": ["Vinyl"],
+    "prefer_countries": ["US"]
+  },
+  "eras": [
+    {
+      "id": "1990-1993",
+      "label": "Erste Welle (Banks / Mills / Hood)",
+      "from": 1990,
+      "to": 1993
+    },
+    {
+      "id": "1994-1997",
+      "label": "Mad Mike solo, Galaxy 2 Galaxy, Red Planet",
+      "from": 1994,
+      "to": 1997
+    },
+    {
+      "id": "1998-2004",
+      "label": "Interstellar Fugitives, Los Hermanos, Aztec Mystic",
+      "from": 1998,
+      "to": 2004
+    },
+    {
+      "id": "2005-",
+      "label": "Timeline und Live-Aera",
+      "from": 2005,
+      "to": null
+    }
+  ],
+  "related_seed_file": "seeds/related.json",
+  "video_match_threshold": 0.72
+}

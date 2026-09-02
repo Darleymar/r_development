@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UR-Katalog</title>
+  <link rel="icon" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>UR&#8209;Katalog</h1>
+    <span class="sub" id="db-hint"></span>
+  </div>
+
+  <div class="progress-block">
+    <div class="progress-line">
+      <strong id="progress-text">&nbsp;</strong>
+      <span class="hint" id="status-breakdown"></span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="progress-bar"></div></div>
+  </div>
+
+  <button id="btn-next" class="primary" title="Taste: .">
+    &#9654; n&auml;chstes ungeh&ouml;rtes
+  </button>
+</header>
+
+<section class="filters">
+  <label>Label
+    <select id="f-label"><option value="">alle</option></select>
+  </label>
+  <label>&Auml;ra
+    <select id="f-era"><option value="">alle</option></select>
+  </label>
+  <label>Jahr von
+    <input type="number" id="f-year-from" min="1980" max="2100" placeholder="&ndash;">
+  </label>
+  <label>bis
+    <input type="number" id="f-year-to" min="1980" max="2100" placeholder="&ndash;">
+  </label>
+  <label>Status
+    <select id="f-status">
+      <option value="">alle</option>
+      <option value="ungehoert">ungeh&ouml;rt</option>
+      <option value="ungehoert,nochmal">offen (ungeh&ouml;rt + nochmal)</option>
+      <option value="gehoert">geh&ouml;rt</option>
+      <option value="favorit">Favorit</option>
+      <option value="nochmal">nochmal</option>
+    </select>
+  </label>
+  <label>Sortierung
+    <select id="f-sort">
+      <option value="catno">Katalognummer</option>
+      <option value="label">Label, dann Cat#</option>
+      <option value="year">Jahr</option>
+    </select>
+  </label>
+  <label class="check"><input type="checkbox" id="f-video"> nur mit Video</label>
+  <label class="check"><input type="checkbox" id="f-group" checked> nach &Auml;ra gruppieren</label>
+  <label class="grow">Suche
+    <input type="search" id="f-q" placeholder="Artist, Titel, Track&nbsp;&hellip; (Taste: /)">
+  </label>
+  <button id="btn-reset" class="ghost">zur&uuml;cksetzen</button>
+</section>
+
+<section class="eras" id="era-stats"></section>
+
+<main id="list" class="list" tabindex="0">
+  <p class="empty">Laden&nbsp;&hellip;</p>
+</main>
+
+<footer class="legend">
+  <span><kbd>j</kbd>/<kbd>k</kbd> navigieren</span>
+  <span><kbd>Enter</kbd> auf-/zuklappen</span>
+  <span><kbd>g</kbd> geh&ouml;rt</span>
+  <span><kbd>f</kbd> Favorit</span>
+  <span><kbd>n</kbd> nochmal</span>
+  <span><kbd>u</kbd> zur&uuml;ck auf ungeh&ouml;rt</span>
+  <span><kbd>.</kbd> n&auml;chstes ungeh&ouml;rtes</span>
+  <span><kbd>/</kbd> Suche</span>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
