@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
-import requests
+from .webclient import Transport
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 SEARCH_URL = "https://api.spotify.com/v1/search"
@@ -36,7 +36,7 @@ class SpotifyClient:
         self.client_id = client_id
         self.client_secret = client_secret
         self.market = market
-        self.session = requests.Session()
+        self.transport = Transport()
         self._token: Optional[str] = None
         self._expires_at = 0.0
 
@@ -46,11 +46,10 @@ class SpotifyClient:
         basic = base64.b64encode(
             f"{self.client_id}:{self.client_secret}".encode()
         ).decode()
-        response = self.session.post(
+        response = self.transport.post_form(
             TOKEN_URL,
-            data={"grant_type": "client_credentials"},
+            {"grant_type": "client_credentials"},
             headers={"Authorization": f"Basic {basic}"},
-            timeout=30,
         )
         if not response.ok:
             raise SpotifyError(f"Token-Abruf fehlgeschlagen: {response.status_code}")
@@ -63,14 +62,13 @@ class SpotifyClient:
         query = " ".join(part for part in (artist, title) if part).strip()
         if not query:
             return None
-        response = self.session.get(
+        self.transport.headers["Authorization"] = f"Bearer {self._access_token()}"
+        response = self.transport.get(
             SEARCH_URL,
-            params={"q": query, "type": "album", "limit": 1, "market": self.market},
-            headers={"Authorization": f"Bearer {self._access_token()}"},
-            timeout=30,
+            {"q": query, "type": "album", "limit": 1, "market": self.market},
         )
         if response.status_code == 429:
-            time.sleep(float(response.headers.get("Retry-After", 5)))
+            time.sleep(float(response.header("Retry-After") or 5))
             return self.find_album(artist, title)
         if not response.ok:
             raise SpotifyError(f"Suche fehlgeschlagen: {response.status_code}")

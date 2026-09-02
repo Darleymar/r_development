@@ -7,10 +7,12 @@ from urllib.parse import parse_qs, urlparse
 
 
 class FakeResponse:
+    """Wie urkatalog.webclient.Response, nur ohne Netz."""
+
     def __init__(self, payload, status_code=200, headers=None):
         self._payload = payload
         self.status_code = status_code
-        self.headers = headers or {}
+        self.headers = {key.lower(): value for key, value in (headers or {}).items()}
         self.text = json.dumps(payload)
 
     @property
@@ -19,6 +21,9 @@ class FakeResponse:
 
     def json(self):
         return self._payload
+
+    def header(self, name):
+        return self.headers.get(name.lower())
 
 
 LABEL = {
@@ -118,8 +123,8 @@ RELEASES = {
 }
 
 
-class FakeSession:
-    """Ersetzt requests.Session im DiscogsClient."""
+class FakeTransport:
+    """Ersetzt urkatalog.webclient.Transport im DiscogsClient."""
 
     def __init__(self, remaining_sequence=None, fail_first=0):
         self.headers = {}

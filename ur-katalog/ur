@@ -1,0 +1,47 @@
+#!/bin/sh
+# Kleiner Starthelfer, vor allem fuers Handy.
+#
+#   ./ur fetch     Katalog holen bzw. fortsetzen (lange Sache)
+#   ./ur app       Oberflaeche starten
+#   ./ur stats     Zaehlstand
+#
+# Unter Termux wird ein Wakelock gesetzt: ohne den friert Android den Prozess
+# ein, sobald der Bildschirm ausgeht, und der Lauf steht still.
+set -e
+
+PY=$(command -v python3 || command -v python)
+[ -n "$PY" ] || { echo "Kein Python gefunden. Unter Termux: pkg install python"; exit 1; }
+
+cd "$(dirname "$0")"
+
+wakelock() {
+    command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock || true
+}
+unlock() {
+    command -v termux-wake-unlock >/dev/null 2>&1 && termux-wake-unlock || true
+}
+
+case "${1:-app}" in
+    fetch)
+        shift
+        wakelock
+        trap unlock EXIT INT TERM
+        "$PY" fetch.py all "$@"
+        ;;
+    app)
+        shift
+        wakelock
+        trap unlock EXIT INT TERM
+        "$PY" app.py "$@"
+        ;;
+    stats)
+        shift
+        "$PY" fetch.py stats "$@"
+        ;;
+    *)
+        # Alles andere direkt an fetch.py durchreichen: ./ur details --limit 50
+        wakelock
+        trap unlock EXIT INT TERM
+        "$PY" fetch.py "$@"
+        ;;
+esac

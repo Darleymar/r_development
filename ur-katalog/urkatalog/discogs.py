@@ -16,7 +16,7 @@ from __future__ import annotations
 import time
 from typing import Any, Callable, Iterator, Optional
 
-import requests
+from .webclient import NetworkError, Transport
 
 BASE_URL = "https://api.discogs.com"
 WINDOW_SECONDS = 60.0
@@ -39,9 +39,9 @@ class RateLimitState:
         self.remaining: Optional[int] = None
         self.used: Optional[int] = None
 
-    def update(self, headers) -> None:
+    def update(self, response) -> None:
         def as_int(name: str) -> Optional[int]:
-            value = headers.get(name)
+            value = response.header(name)
             try:
                 return int(value) if value is not None else None
             except ValueError:
@@ -74,7 +74,7 @@ class DiscogsClient:
         user_agent: str,
         *,
         base_url: str = BASE_URL,
-        session: Optional[requests.Session] = None,
+        transport: Optional[Transport] = None,
         sleep: Callable[[float], None] = time.sleep,
         log: Callable[[str], None] = print,
     ) -> None:
@@ -87,8 +87,8 @@ class DiscogsClient:
             raise DiscogsError("Discogs verlangt einen eigenen User-Agent.")
 
         self.base_url = base_url.rstrip("/")
-        self.session = session or requests.Session()
-        self.session.headers.update(
+        self.transport = transport or Transport()
+        self.transport.headers.update(
             {
                 "Authorization": f"Discogs token={token}",
                 "User-Agent": user_agent,
@@ -110,8 +110,8 @@ class DiscogsClient:
                 self._sleep(wait)
 
             try:
-                response = self.session.get(url, params=params, timeout=30)
-            except requests.RequestException as exc:
+                response = self.transport.get(url, params=params, timeout=30)
+            except NetworkError as exc:
                 if attempt == MAX_RETRIES:
                     raise DiscogsError(f"Netzwerkfehler bei {url}: {exc}") from exc
                 backoff = 2**attempt
@@ -120,10 +120,10 @@ class DiscogsClient:
                 continue
 
             self.request_count += 1
-            self.rate.update(response.headers)
+            self.rate.update(response)
 
             if response.status_code == 429:
-                retry_after = float(response.headers.get("Retry-After", WINDOW_SECONDS))
+                retry_after = float(response.header("Retry-After") or WINDOW_SECONDS)
                 self._log(f"  429 vom Server, warte {retry_after:.0f}s")
                 self._sleep(retry_after)
                 continue

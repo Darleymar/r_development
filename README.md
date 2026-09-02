@@ -9,5 +9,6 @@ UNIGIS Modul Automated Data Processing with R
   vollständig im Gerät (React + Vite, SQLite als WebAssembly, Capacitor für
   die Android-App).
 - [`ur-katalog/`](ur-katalog/) – Durchhör-App für den Katalog von Underground
-  Resistance samt Sublabels. Discogs-Fetcher (Python + SQLite) plus eine
-  FastAPI-Seite mit Hörstatus, Video-Links und Ära-Gruppierung.
+  Resistance samt Sublabels. Discogs-Fetcher plus Weboberfläche mit Hörstatus,
+  Video-Links und Ära-Gruppierung. Läuft komplett auf dem Handy (Termux) —
+  nur Python-Standardbibliothek, SQLite, kein Build-Step.

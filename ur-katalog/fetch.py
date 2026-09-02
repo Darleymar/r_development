@@ -171,46 +171,54 @@ def main(argv=None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
+    # Beide Optionen gelten vor *und* nach dem Unterbefehl -- auf dem Handy
+    # tippt niemand gern zweimal, weil die Reihenfolge nicht stimmte.
+    # SUPPRESS: fehlt die Option beim Unterbefehl, bleibt der globale Wert stehen.
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--config", default=argparse.SUPPRESS)
+    common.add_argument("--db", default=argparse.SUPPRESS,
+                        help="ueberschreibt db aus config.json")
+
     parser.add_argument("--config", default=str(config_mod.DEFAULT_CONFIG))
     parser.add_argument("--db", help="ueberschreibt db aus config.json")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("find-label", help="Label-ID ueber die Suche ermitteln")
+    p = sub.add_parser("find-label", parents=[common], help="Label-ID ueber die Suche ermitteln")
     p.add_argument("--name", help="Suchbegriff (Default: label.name aus config.json)")
     p.add_argument("--pick", type=int, help="gefundene ID direkt in config.json schreiben")
     p.set_defaults(func=cmd_find_label)
 
-    p = sub.add_parser("labels", help="Label und Sublabels speichern")
+    p = sub.add_parser("labels", parents=[common], help="Label und Sublabels speichern")
     p.set_defaults(func=cmd_labels)
 
-    p = sub.add_parser("releases", help="Releaselisten je Label durchpaginieren")
+    p = sub.add_parser("releases", parents=[common], help="Releaselisten je Label durchpaginieren")
     p.add_argument("--label", type=int, nargs="*", help="nur diese Label-IDs")
     p.set_defaults(func=cmd_releases)
 
-    p = sub.add_parser("details", help="Detaildaten inkl. videos-Array (resumierbar)")
+    p = sub.add_parser("details", parents=[common], help="Detaildaten inkl. videos-Array (resumierbar)")
     p.add_argument("--limit", type=int, help="nur N Releases in diesem Lauf")
     p.add_argument("--refresh", action="store_true", help="auch bereits geholte erneut")
     p.set_defaults(func=cmd_details)
 
-    p = sub.add_parser("dedupe", help="Hauptversion je Katalognummer neu bestimmen")
+    p = sub.add_parser("dedupe", parents=[common], help="Hauptversion je Katalognummer neu bestimmen")
     p.set_defaults(func=cmd_dedupe)
 
-    p = sub.add_parser("related", help="Seed-Liste verwandter Releases (X-101 ff.)")
+    p = sub.add_parser("related", parents=[common], help="Seed-Liste verwandter Releases (X-101 ff.)")
     p.set_defaults(func=cmd_related)
 
-    p = sub.add_parser("spotify", help="optionaler Spotify-Abgleich (nur Suche)")
+    p = sub.add_parser("spotify", parents=[common], help="optionaler Spotify-Abgleich (nur Suche)")
     p.add_argument("--limit", type=int)
     p.add_argument("--market", default="DE")
     p.add_argument("--recheck", action="store_true", help="auch bereits geprueffte erneut pruefen")
     p.add_argument("--playlist", help="M3U in Katalogreihenfolge schreiben")
     p.set_defaults(func=cmd_spotify)
 
-    p = sub.add_parser("all", help="labels + releases + details + dedupe")
+    p = sub.add_parser("all", parents=[common], help="labels + releases + details + dedupe")
     p.add_argument("--limit", type=int, help="Detailschritt begrenzen")
     p.add_argument("--no-related", action="store_true")
     p.set_defaults(func=cmd_all)
 
-    p = sub.add_parser("stats", help="Zaehlstand ausgeben")
+    p = sub.add_parser("stats", parents=[common], help="Zaehlstand ausgeben")
     p.set_defaults(func=cmd_stats)
 
     args = parser.parse_args(argv)
@@ -226,6 +234,12 @@ def main(argv=None) -> int:
     except KeyboardInterrupt:
         print("\nAbgebrochen.", file=sys.stderr)
         return 130
+    except BrokenPipeError:
+        # z. B. 'fetch.py stats | head' -- kein Grund fuer einen Traceback.
+        try:
+            sys.stdout.close()
+        finally:
+            return 0
 
 
 if __name__ == "__main__":

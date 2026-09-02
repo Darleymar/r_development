@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from fake_discogs import FakeSession
+from fake_discogs import FakeTransport
 from urkatalog import config as config_mod
 from urkatalog import db as db_mod
 from urkatalog import dedupe, fetcher
@@ -24,17 +24,17 @@ def conn():
     return connection
 
 
-def make_client(session=None, **kwargs):
+def make_client(transport=None, **kwargs):
     return DiscogsClient(
-        "token", "URKatalog/test", session=session or FakeSession(),
+        "token", "URKatalog/test", transport=transport or FakeTransport(),
         sleep=lambda _: None, log=lambda _: None, **kwargs
     )
 
 
 def test_client_setzt_user_agent_und_token():
     client = make_client()
-    assert client.session.headers["User-Agent"] == "URKatalog/test"
-    assert client.session.headers["Authorization"] == "Discogs token=token"
+    assert client.transport.headers["User-Agent"] == "URKatalog/test"
+    assert client.transport.headers["Authorization"] == "Discogs token=token"
 
 
 def test_client_ohne_token_meckert():
@@ -43,10 +43,10 @@ def test_client_ohne_token_meckert():
 
 
 def test_serverfehler_wird_wiederholt():
-    session = FakeSession(fail_first=2)
-    client = make_client(session)
+    transport = FakeTransport(fail_first=2)
+    client = make_client(transport)
     assert client.label(23528)["name"] == "Underground Resistance"
-    assert len(session.calls) == 3
+    assert len(transport.calls) == 3
 
 
 def test_drosselung_richtet_sich_nach_dem_restbudget():
@@ -104,15 +104,15 @@ def test_details_sind_resumierbar(conn, cfg):
     fetcher.sync_details(conn, make_client(), cfg, limit=2, log=lambda _: None)
     assert db_mod.counts(conn)["pending"] == 2
 
-    session = FakeSession()
-    fetcher.sync_details(conn, make_client(session), cfg, log=lambda _: None)
+    transport = FakeTransport()
+    fetcher.sync_details(conn, make_client(transport), cfg, log=lambda _: None)
     assert db_mod.counts(conn)["pending"] == 0
     # Zweiter Lauf holt nur noch die fehlenden zwei, nicht alle vier.
-    assert len([call for call in session.calls if "/releases/" in call[0]]) == 2
+    assert len([call for call in transport.calls if "/releases/" in call[0]]) == 2
 
-    session = FakeSession()
-    fetcher.sync_details(conn, make_client(session), cfg, log=lambda _: None)
-    assert session.calls == []
+    transport = FakeTransport()
+    fetcher.sync_details(conn, make_client(transport), cfg, log=lambda _: None)
+    assert transport.calls == []
 
 
 def test_hoerstatus_ueberlebt_erneuten_abgleich(conn, cfg):

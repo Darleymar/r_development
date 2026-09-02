@@ -6,10 +6,10 @@
   --text: #e7e9ee;
   --muted: #949bab;
   --accent: #e6b422;      /* UR-Gelb */
-  --accent-dim: #7a6420;
   --ok: #4caf7d;
   --fav: #e0603a;
   --again: #6b8fd6;
+  --tap: 44px;            /* Mindesthoehe fuer Daumen */
 }
 
 * { box-sizing: border-box; }
@@ -19,12 +19,24 @@ body {
   background: var(--bg);
   color: var(--text);
   font: 14px/1.45 "Inter", "Helvetica Neue", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
 
 kbd {
   background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px;
   border-radius: 4px; padding: 0 5px; font-family: ui-monospace, monospace; font-size: 11px;
 }
+
+.mobile-only { display: none; }
+
+button {
+  font: inherit; cursor: pointer; border-radius: 6px; padding: 8px 14px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #1a1500; font-weight: 600; }
+button.ghost { background: transparent; color: var(--muted); }
 
 /* ---------------------------------------------------------------- Kopf -- */
 .top {
@@ -34,19 +46,11 @@ kbd {
 }
 .brand h1 { margin: 0; font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; }
 .brand .sub { color: var(--muted); font-size: 11px; }
-.progress-block { flex: 1; min-width: 220px; }
+.progress-block { flex: 1; min-width: 180px; }
 .progress-line { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
 .progress-line .hint { color: var(--muted); }
 .bar { height: 6px; margin-top: 5px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
 .bar-fill { height: 100%; width: 0; background: var(--accent); transition: width .25s; }
-
-button {
-  font: inherit; cursor: pointer; border-radius: 6px; padding: 8px 14px;
-  border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
-}
-button:hover { border-color: var(--muted); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #1a1500; font-weight: 600; }
-button.ghost { background: transparent; color: var(--muted); }
 
 /* ------------------------------------------------------------- Filter -- */
 .filters {
@@ -54,13 +58,14 @@ button.ghost { background: transparent; color: var(--muted); }
   padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
 }
 .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); }
-.filters label.check { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 6px; }
+.filters label.check { flex-direction: row; align-items: center; gap: 8px; padding-bottom: 6px; }
 .filters label.grow { flex: 1; min-width: 200px; }
 .filters input, .filters select {
   font: inherit; padding: 6px 8px; color: var(--text);
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px;
 }
 .filters input[type="number"] { width: 84px; }
+.filters input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
 
 /* ---------------------------------------------------------- Aera-Stats -- */
 .eras { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 20px 0; }
@@ -75,6 +80,7 @@ button.ghost { background: transparent; color: var(--muted); }
 /* ---------------------------------------------------------------- Liste -- */
 .list { padding: 14px 20px 72px; outline: none; }
 .list .empty { color: var(--muted); }
+.list code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
 
 .group-head {
   margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line);
@@ -97,7 +103,7 @@ button.ghost { background: transparent; color: var(--muted); }
 .row .icons { color: var(--muted); font-size: 12px; letter-spacing: 2px; }
 
 .badge {
-  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
   padding: 2px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted);
 }
 .badge.gehoert { color: var(--ok); border-color: var(--ok); }
@@ -115,7 +121,7 @@ button.ghost { background: transparent; color: var(--muted); }
 
 .tracklist { list-style: none; margin: 0; padding: 0; }
 .tracklist li {
-  display: grid; grid-template-columns: 44px 1fr 60px 80px; gap: 10px;
+  display: grid; grid-template-columns: 44px 1fr 60px 92px; gap: 10px;
   padding: 3px 0; align-items: baseline;
 }
 .tracklist .pos { font-family: ui-monospace, monospace; color: var(--muted); font-size: 12px; }
@@ -134,7 +140,7 @@ button.ghost { background: transparent; color: var(--muted); }
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0 8px; }
 .actions button.active { border-color: var(--accent); color: var(--accent); }
-.actions .stars { margin-left: 8px; color: var(--muted); cursor: pointer; font-size: 16px; }
+.actions .stars { margin-left: 8px; color: var(--muted); cursor: pointer; font-size: 20px; letter-spacing: 3px; }
 .actions .stars span:hover, .actions .stars span.on { color: var(--accent); }
 .notes {
   width: 100%; max-width: 640px; min-height: 60px; padding: 8px; font: inherit;
@@ -149,9 +155,84 @@ button.ghost { background: transparent; color: var(--muted); }
   background: var(--panel); border-top: 1px solid var(--line);
 }
 
+/* ============================================================== Handy === */
 @media (max-width: 720px) {
-  .top { flex-wrap: wrap; }
-  .row { grid-template-columns: 80px 1fr auto; }
-  .row .year, .row .icons { display: none; }
-  .detail { padding-left: 12px; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: flex; }
+
+  .top {
+    flex-direction: column; align-items: stretch; gap: 6px; padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .brand h1 { font-size: 15px; }
+  .brand .sub { font-size: 10px; text-align: right; }
+  .progress-line { font-size: 11px; }
+  .progress-line .hint { display: none; }
+
+  /* Filter kosten auf dem Handy zu viel Platz -- nur auf Knopfdruck, und als
+     Sheet ueber der Liste statt darueber eingeschoben: so bleibt die Liste
+     an Ort und Stelle und die Daumenleiste erreichbar. */
+  .filters { display: none; padding: 12px 14px; }
+  .filters.open {
+    display: flex; position: fixed; left: 0; right: 0; z-index: 7;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+    max-height: 68vh; overflow-y: auto;
+    border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    box-shadow: 0 -14px 34px rgba(0, 0, 0, .55);
+  }
+  /* min-width:0, sonst sprengen lange Optionstexte (Aeren!) das Sheet. */
+  .filters label { flex: 1 1 100%; min-width: 0; font-size: 11px; }
+  .filters label.year { flex: 1 1 46%; }
+  .filters label.check { flex: 1 1 46%; padding: 2px 0; font-size: 13px; color: var(--text); }
+  .filters input, .filters select {
+    width: 100%; max-width: 100%; min-height: var(--tap);
+    font-size: 16px;  /* darunter zoomt der mobile Browser beim Antippen hinein */
+  }
+  .filters #btn-reset { flex: 1 1 100%; min-height: var(--tap); }
+
+  .eras { flex-wrap: nowrap; overflow-x: auto; padding: 10px 14px 0; scroll-snap-type: x mandatory; }
+  .era-card { flex: 0 0 68%; scroll-snap-align: start; }
+
+  .list { padding: 10px 14px calc(80px + env(safe-area-inset-bottom)); }
+  .group-head { margin: 18px 0 6px; font-size: 11px; }
+
+  /* Zwei Zeilen statt Spalten: Cat# / Jahr / Icons / Status oben,
+     Artist - Titel darunter. Flex statt Grid, damit die Kopfzeile umbrechen
+     kann statt sich zu ueberlagern. */
+  .row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 2px 8px; padding: 10px 4px; min-height: var(--tap);
+  }
+  .row .catno { order: 1; font-size: 13px; }
+  .row .year  { order: 2; }
+  .row .icons { order: 3; }
+  .row > div:last-child { order: 4; margin-left: auto; }
+  .row .name  { order: 5; flex: 1 1 100%; white-space: normal; font-size: 15px; line-height: 1.3; }
+  .row .year::before { content: "·"; margin-right: 6px; }
+
+  .detail { padding: 12px 4px 20px; }
+  .tracklist li { grid-template-columns: 30px 1fr auto; gap: 6px; padding: 6px 0; align-items: center; }
+  .tracklist .dur { display: none; }
+  .tracklist a.play {
+    padding: 8px 12px; min-height: 36px; display: inline-flex; align-items: center;
+    border: 1px solid var(--accent); border-radius: 18px;
+  }
+  .tracklist .nomatch { text-align: right; }
+  .videos li, .variants li { padding: 8px 0; }
+
+  .actions { gap: 8px; }
+  .actions button { flex: 1 1 46%; min-height: var(--tap); }
+  .actions .stars { flex: 1 1 100%; margin: 4px 0; font-size: 26px; text-align: center; }
+  .notes { min-height: 84px; font-size: 16px; }
+
+  /* Daumenleiste unten */
+  .actionbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    display: flex; gap: 8px; padding: 8px 14px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    background: var(--panel); border-top: 1px solid var(--line);
+  }
+  .actionbar #btn-filters { flex: 0 0 auto; min-height: var(--tap); }
+  .actionbar #btn-next-mobile { flex: 1; min-height: var(--tap); font-size: 15px; }
 }

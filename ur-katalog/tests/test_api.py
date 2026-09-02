@@ -1,16 +1,56 @@
-import pytest
-from fastapi.testclient import TestClient
+"""Tests gegen den echten HTTP-Server -- gestartet im Testprozess, ohne Netz."""
 
-from fake_discogs import FakeSession
+import http.client
+import json
+import threading
+from http.server import ThreadingHTTPServer
+
+import pytest
+
+from fake_discogs import FakeTransport
 from urkatalog import config as config_mod
 from urkatalog import db as db_mod
 from urkatalog import dedupe, fetcher
 from urkatalog.discogs import DiscogsClient
 
 
+class Response:
+    def __init__(self, status_code, body):
+        self.status_code = status_code
+        self.body = body
+
+    def json(self):
+        return json.loads(self.body)
+
+    @property
+    def text(self):
+        return self.body.decode("utf-8")
+
+
+class Client:
+    def __init__(self, port):
+        self.port = port
+
+    def _request(self, method, path, payload=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        body = json.dumps(payload).encode() if payload is not None else None
+        headers = {"Content-Type": "application/json"} if body else {}
+        conn.request(method, path, body=body, headers=headers)
+        response = conn.getresponse()
+        result = Response(response.status, response.read())
+        conn.close()
+        return result
+
+    def get(self, path):
+        return self._request("GET", path)
+
+    def put(self, path, json=None):
+        return self._request("PUT", path, json if json is not None else {})
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
-    """App gegen eine frisch befuellte Test-DB."""
+    """Server gegen eine frisch befuellte Test-DB."""
     import app as app_module
 
     db_path = tmp_path / "test.db"
@@ -21,7 +61,8 @@ def client(tmp_path, monkeypatch):
     conn = db_mod.connect(db_path)
     db_mod.init(conn)
     discogs = DiscogsClient(
-        "t", "URKatalog/test", session=FakeSession(), sleep=lambda _: None, log=lambda _: None
+        "t", "URKatalog/test", transport=FakeTransport(), sleep=lambda _: None,
+        log=lambda _: None,
     )
     fetcher.sync_labels(conn, discogs, cfg, log=lambda _: None)
     fetcher.sync_releases(conn, discogs, cfg, log=lambda _: None)
@@ -30,7 +71,17 @@ def client(tmp_path, monkeypatch):
     conn.close()
 
     monkeypatch.setattr(app_module, "CONFIG", cfg)
-    return TestClient(app_module.app)
+    monkeypatch.setattr(app_module.Handler, "log_message", lambda *args: None)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), app_module.Handler)
+    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
+    thread.start()
+    try:
+        yield Client(server.server_port)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
 def test_meta_listet_labels_und_aeren(client):
@@ -66,6 +117,12 @@ def test_filter_label_jahr_video_und_suche(client):
     assert catnos("q=Martian") == ["RP-1"]
 
 
+def test_unsinnige_filter_werden_abgewiesen(client):
+    assert client.get("/api/releases?status=vielleicht").status_code == 400
+    assert client.get("/api/releases?year_from=neunzehn").status_code == 400
+    assert client.get("/api/releases?sort=zufall").status_code == 400
+
+
 def test_detail_ordnet_video_dem_track_zu(client):
     release = client.get("/api/releases/101").json()
     tracks = {track["title"]: track for track in release["tracks"]}
@@ -95,9 +152,12 @@ def test_notiz_bleibt_beim_statuswechsel_erhalten(client):
     assert client.get("/api/releases/101").json()["listening"]["notes"] == "Klassiker"
 
 
-def test_ungueltiger_status_wird_abgelehnt(client):
+def test_ungueltige_eingaben_werden_abgelehnt(client):
     assert client.put("/api/listening/101", json={"status": "vielleicht"}).status_code == 422
+    assert client.put("/api/listening/101", json={"rating": 9}).status_code == 422
     assert client.put("/api/listening/999999", json={"status": "gehoert"}).status_code == 404
+    assert client.get("/api/releases/999999").status_code == 404
+    assert client.get("/api/quatsch").status_code == 404
 
 
 def test_naechstes_ungehoertes_folgt_der_katalogreihenfolge(client):
@@ -121,21 +181,6 @@ def test_naechstes_ungehoertes_respektiert_filter(client):
     assert data["remaining"] == 1
 
 
-def test_statistik_pro_aera(client):
-    client.put("/api/listening/101", json={"status": "gehoert"})
-    stats = client.get("/api/stats").json()
-    assert (stats["total"], stats["heard"]) == (3, 1)
-    assert stats["by_status"]["gehoert"] == 1
-    erste_welle = next(era for era in stats["by_era"] if era["id"] == "1990-1993")
-    assert (erste_welle["total"], erste_welle["heard"]) == (2, 1)
-
-
-def test_startseite_wird_ausgeliefert(client):
-    response = client.get("/")
-    assert response.status_code == 200
-    assert "UR" in response.text
-
-
 def test_after_springt_weiter_auch_von_einem_gehoerten_release_aus(client):
     # Steht der Cursor auf UR-007 (gehoert), kommt UR-030 -- nicht wieder RP-1.
     client.put("/api/listening/101", json={"status": "gehoert"})
@@ -145,12 +190,32 @@ def test_after_springt_weiter_auch_von_einem_gehoerten_release_aus(client):
 
 
 def test_after_am_listenende_bricht_um(client):
-    weiter = client.get("/api/next-unheard?after=103").json()
-    assert weiter["item"]["catno_raw"] == "RP-1"
+    assert client.get("/api/next-unheard?after=103").json()["item"]["catno_raw"] == "RP-1"
 
 
 def test_alles_gehoert_liefert_nichts_mehr(client):
     for release_id in (101, 103, 201):
         client.put(f"/api/listening/{release_id}", json={"status": "gehoert"})
-    data = client.get("/api/next-unheard").json()
-    assert data == {"id": None, "remaining": 0, "item": None}
+    assert client.get("/api/next-unheard").json() == {"id": None, "remaining": 0, "item": None}
+
+
+def test_statistik_pro_aera(client):
+    client.put("/api/listening/101", json={"status": "gehoert"})
+    stats = client.get("/api/stats").json()
+    assert (stats["total"], stats["heard"]) == (3, 1)
+    assert stats["by_status"]["gehoert"] == 1
+    erste_welle = next(era for era in stats["by_era"] if era["id"] == "1990-1993")
+    assert (erste_welle["total"], erste_welle["heard"]) == (2, 1)
+
+
+def test_startseite_und_statische_dateien(client):
+    seite = client.get("/")
+    assert seite.status_code == 200
+    assert "UR" in seite.text
+    assert client.get("/static/app.js").status_code == 200
+    assert client.get("/static/style.css").status_code == 200
+
+
+def test_kein_ausbrechen_aus_dem_static_verzeichnis(client):
+    for pfad in ("/static/../config.json", "/static/../../etc/passwd"):
+        assert client.get(pfad).status_code in (403, 404)

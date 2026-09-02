@@ -110,7 +110,7 @@ async function loadMeta() {
   if (counts.releases === 0) {
     listEl.innerHTML =
       `<p class="empty">Noch keine Daten. Erst den Fetcher laufen lassen:
-       <code>python fetch.py find-label</code>, dann <code>python fetch.py all</code>.</p>`;
+       <code>./ur find-label</code>, dann <code>./ur fetch</code>.</p>`;
   }
 }
 
@@ -405,7 +405,7 @@ document.addEventListener("keydown", (event) => {
     case "n": if (id) setStatus(id, "nochmal"); break;
     case "u": if (id) setStatus(id, "ungehoert"); break;
     case ".": nextUnheard(); break;
-    case "/": event.preventDefault(); $("#f-q").focus(); break;
+    case "/": event.preventDefault(); toggleFilters(true); $("#f-q").focus(); break;
     default: return;
   }
   if (["j", "k", "g", "f", "n", "u", ".", "o", "Enter"].includes(event.key)) {
@@ -419,7 +419,17 @@ listEl.addEventListener("click", (event) => {
   toggle(Number(row.dataset.id), Number(row.dataset.index));
 });
 
+function toggleFilters(force) {
+  const panel = $("#filters");
+  const open = force ?? !panel.classList.contains("open");
+  panel.classList.toggle("open", open);
+  $("#btn-filters").classList.toggle("active", open);
+  return open;
+}
+
 $("#btn-next").addEventListener("click", nextUnheard);
+$("#btn-next-mobile").addEventListener("click", nextUnheard);
+$("#btn-filters").addEventListener("click", () => toggleFilters());
 $("#btn-reset").addEventListener("click", () => {
   ["f-label", "f-era", "f-year-from", "f-year-to", "f-status", "f-q"]
     .forEach((id) => { document.getElementById(id).value = ""; });
@@ -436,6 +446,17 @@ $("#f-q").addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => loadList(), 250);
 });
+
+/* Service Worker: macht die Seite auf dem Handy installierbar und laedt die
+ * Oberflaeche auch dann, wenn der Server gerade nicht laeuft. API-Antworten
+ * werden bewusst nicht gecacht -- der Hoerstatus soll immer aktuell sein. */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/static/sw.js").catch(() => {
+      /* z. B. wenn die Seite nicht ueber localhost laeuft -- kein Beinbruch */
+    });
+  });
+}
 
 (async function start() {
   restoreFilters();
