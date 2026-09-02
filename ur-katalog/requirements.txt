@@ -1,0 +1,10 @@
+# Fetcher
+requests>=2.31
+
+# App
+fastapi>=0.110
+uvicorn>=0.27
+
+# Tests (optional)
+pytest>=8.0
+httpx>=0.27
