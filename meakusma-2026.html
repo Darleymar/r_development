@@ -1,0 +1,1038 @@
+<meta charset="utf-8">
+<title>Meakusma 2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#FBE3DA;
+    --ink:#100E0D;
+    --ink-soft:#6A5852;
+    --marker:#F4A45F;
+    --rule:rgba(16,14,13,.16);
+    --accent:#B7CDBF;
+    --accent-ink:#100E0D;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Archivo','Helvetica Neue',Arial,sans-serif;
+    font-size:16px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px 64px}
+
+  /* ---- Kopf: nach dem gedruckten Timetable ---- */
+  .banner{
+    background:var(--accent);
+    color:var(--accent-ink);
+    border-bottom:3px solid var(--ink);
+    margin:0 -16px 14px;
+    padding:14px 16px 10px;
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  }
+  .banner h1{
+    font-family:'Archivo Black','Archivo Narrow',Impact,sans-serif;
+    font-size:clamp(28px,9vw,42px);
+    letter-spacing:-.02em;
+    margin:0;line-height:.95;text-transform:uppercase;
+  }
+  .banner span{
+    font-family:'Archivo Narrow','Archivo',sans-serif;
+    font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    white-space:nowrap;text-align:right;
+  }
+  .lede{font-size:14.5px;color:var(--ink-soft);margin:0 0 12px}
+  .lede a{color:var(--ink);text-underline-offset:3px}
+  .lede.hint{
+    font-size:13px;border-left:3px solid var(--rule);
+    padding:2px 0 2px 10px;margin:-4px 0 14px;
+  }
+
+  /* ---- Tagesumschalter ---- */
+  .days{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+    margin:0 0 10px;
+  }
+  .days button{
+    font:700 13px/1.15 'Archivo',sans-serif;
+    padding:9px 4px;border:1.5px solid var(--ink);border-radius:10px;
+    background:transparent;color:var(--ink);cursor:pointer;text-align:center;
+  }
+  .days button em{display:block;font:600 10px/1.3 'Archivo',sans-serif;font-style:normal;opacity:.65;letter-spacing:.04em}
+  .days button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  .days button[aria-pressed="true"] em{opacity:.8}
+
+  /* ---- Filterleisten ---- */
+  .bar{
+    display:flex;gap:8px;align-items:center;
+    position:sticky;top:0;z-index:5;
+    background:var(--paper);
+    padding:10px 0 8px;
+    border-bottom:1px solid var(--rule);
+  }
+  .bar button{
+    font:600 13px/1 'Archivo',sans-serif;
+    padding:9px 13px;border:1.5px solid var(--ink);border-radius:999px;
+    background:transparent;color:var(--ink);cursor:pointer;
+  }
+  .bar button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  .count{margin-left:auto;font-size:12.5px;color:var(--ink-soft);text-align:right}
+
+  .stages{
+    display:flex;gap:6px;overflow-x:auto;padding:9px 0 10px;
+    border-bottom:1px solid var(--rule);margin-bottom:4px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .stages::-webkit-scrollbar{display:none}
+  .stages button{
+    flex:0 0 auto;
+    font:600 12px/1 'Archivo',sans-serif;
+    padding:7px 11px;border:1.5px solid var(--rule);border-radius:999px;
+    background:transparent;color:var(--ink-soft);cursor:pointer;white-space:nowrap;
+  }
+  .stages button[aria-pressed="true"]{border-color:var(--ink);color:var(--accent-ink);background:var(--accent)}
+  .stages button.reset{border-style:dashed}
+
+  /* ---- Bühnen ---- */
+  .stage{margin:24px 0 0}
+  .stage > h2{
+    display:inline-block;
+    font-family:'Archivo Black','Archivo Narrow',sans-serif;
+    font-size:20px;text-transform:uppercase;letter-spacing:.01em;
+    background:var(--accent);color:var(--accent-ink);padding:3px 9px;margin:0 0 4px;
+  }
+  .stage.specials > h2{background:var(--marker);color:var(--ink)}
+  .stage > .where{margin:0 0 6px;font:600 10.5px/1 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+  .stage > p{margin:0 0 8px;font-size:13px;color:var(--ink-soft)}
+
+  /* ---- Act-Zeile ---- */
+  .act{border-top:1px solid var(--rule);position:relative}
+  .act:last-child{border-bottom:1px solid var(--rule)}
+  .head{
+    display:grid;grid-template-columns:64px 1fr;align-items:start;gap:8px;
+    width:100%;text-align:left;background:none;border:0;padding:13px 34px 13px 0;
+    cursor:pointer;color:inherit;font:inherit;
+  }
+  .time{
+    font-family:'Archivo Narrow','Archivo',sans-serif;
+    font-weight:700;font-size:15px;letter-spacing:.02em;padding-top:2px;
+  }
+  .name{
+    font-family:'Archivo Black','Archivo Narrow',sans-serif;
+    font-size:17px;line-height:1.15;letter-spacing:-.005em;
+  }
+  .meta{
+    display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;
+    font:600 10.5px/1 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .meta i{font-style:normal;border:1px solid var(--rule);border-radius:3px;padding:3px 5px}
+  .meta i.clash{border-color:var(--ink);color:var(--ink)}
+  .meta i.live-now{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .star{
+    position:absolute;right:-6px;top:10px;
+    background:none;border:0;padding:8px 6px;line-height:0;
+    cursor:pointer;color:var(--ink);opacity:.42;
+  }
+  .star svg{display:block;width:21px;height:21px}
+  .act.on .star{opacity:1}
+  .act.on .name span{ box-shadow:inset 0 -9px 0 var(--marker) }
+  .act.past .head{opacity:.45}
+
+  .body{display:none;padding:0 0 18px 0}
+  .act.open .body{display:block}
+  .body p{margin:0 0 12px;font-size:14.5px}
+  .body p.nodesc{color:var(--ink-soft);font-size:13.5px}
+  .subj{margin-bottom:8px}
+  .subj b{
+    display:block;font:700 11px/1 'Archivo',sans-serif;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
+  }
+  .links{display:flex;gap:6px;flex-wrap:wrap}
+  .links a{
+    font:600 12.5px/1 'Archivo',sans-serif;
+    text-decoration:none;color:var(--ink);
+    border:1.5px solid var(--ink);border-radius:999px;padding:8px 12px;
+  }
+  .links a:active{background:var(--ink);color:var(--paper)}
+  .links .copy{
+    font:600 12.5px/1 'Archivo',sans-serif;
+    color:var(--ink-soft);background:transparent;
+    border:1.5px dashed var(--rule);border-radius:999px;padding:8px 12px;
+    cursor:pointer;
+  }
+  .links .copy.done{border-style:solid;border-color:var(--ink);color:var(--ink)}
+
+  .empty{padding:28px 0;color:var(--ink-soft);font-size:14.5px}
+  .foot{margin-top:34px;padding-top:14px;border-top:3px solid var(--ink);font-size:12.5px;color:var(--ink-soft)}
+  :focus-visible{outline:2.5px solid var(--ink);outline-offset:2px}
+  @media (prefers-reduced-motion:no-preference){
+    .act .body{animation:fade .16s ease-out}
+    @keyframes fade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+  }
+</style>
+
+<div class="wrap">
+  <div class="banner">
+    <h1 id="day-title">Meakusma<br>2026</h1>
+    <span id="day-date">03.–06.09.<br>Eupen</span>
+  </div>
+
+  <p class="lede">Antippen für Kurzbeschreibung und Such-Links. Der Stern merkt sich deine Auswahl im Browser. Zum Vorhören gibt es außerdem die offizielle Festival-Playlist auf <a href="https://www.meakusma-festival.be/" target="_blank" rel="noopener">meakusma-festival.be</a>.</p>
+
+  <p class="lede hint">Landet ein Link in der Bandcamp- oder SoundCloud-App auf deren Startseite statt beim Suchergebnis: „Name kopieren“ antippen und in der App einfügen. Wer ganz im Browser bleiben will, hält den Link lange gedrückt und wählt „In neuem Tab öffnen“.</p>
+
+  <div class="days" id="days"></div>
+
+  <div class="bar">
+    <button id="f-all" aria-pressed="true">Alle</button>
+    <button id="f-mine" aria-pressed="false">Gemerkt</button>
+    <button id="f-plan" aria-pressed="false">Laufplan</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="stages" id="stages"></div>
+
+  <div id="list"></div>
+
+  <p class="foot">Programmstand 29.08.2026, abgetippt vom offiziellen Timetable. Meakusma ändert bis zuletzt — vor der Abfahrt nochmal die Updates-Seite prüfen. Einzelne Zeilen waren im Timetable-Screenshot verdeckt und sind mit „unklar“ markiert; für Donnerstag liegen bislang nur die Bühnen im Alten Schlachthof vor.</p>
+</div>
+
+<script>
+/* Zum Testen des Jetzt-Markers: z.B. '2026-09-05T23:45' (lokale Zeit Brüssel). */
+const NOW_OVERRIDE = null;
+
+const KEY      = 'meakusma-2026-marked';
+const KEY_DAY  = 'meakusma-2026-day';
+const SCHLACHT = 'Alter Schlachthof';
+const EXTRA    = 'Extra Stages';
+
+/* ------------------------------------------------------------------ *
+ * Programm. t = Startzeit wie im gedruckten Timetable, tag = Label,
+ * s = abweichende Suchbegriffe (sonst wird der Act-Name benutzt).
+ * Beschreibungen stehen gesammelt unten in INFO.
+ * ------------------------------------------------------------------ */
+const DAYS = [
+{ id:'do', label:'Do', long:'Donnerstag', date:'03.09.2026', iso:'2026-09-03',
+  accent:'#B7CDBF', accentInk:'#100E0D', groups:[
+  { stage:'Heuboden', venue:SCHLACHT, note:'Wird komplett von Studio Néau live übertragen.', acts:[
+    {t:'18H',   n:'Val Clipp',   tag:'DJ'},
+    {t:'20H',   n:'Laura Not',   tag:'DJ'},
+    {t:'22H',   n:'L. Jacobs',   tag:'Live', s:['L. Jacobs','Milan W.']},
+    {t:'23H',   n:'Camille Maria',tag:'DJ'},
+    {t:'00H30', n:'Marc Matter', tag:'Live', s:['Marc Matter','Institut für Feinmotorik']},
+  ]},
+  { stage:'Halle', venue:SCHLACHT, acts:[
+    {t:'20H30', n:'Jaan',            tag:'Unklar'},
+    {t:'22H30', n:'great area',      tag:'Live', s:['great area Relaxin Records']},
+    {t:'00H30', n:'YPY & Ben Vince', tag:'Live', s:['YPY Koshiro Hino','Ben Vince','goat Koshiro Hino']},
+  ]},
+  { stage:'Kesselraum', venue:SCHLACHT, acts:[
+    {t:'19H',   n:'Munda',             tag:'Unklar'},
+    {t:'20H30', n:'Pittori Locali',    tag:'Live'},
+    {t:'22H30', n:'Front Page Leslie', tag:'Live · moli del tro', s:['Front Page Leslie','moli del tro']},
+    {t:'00H30', n:'Ak’Chamel',         tag:'Live'},
+  ]},
+  { stage:'Kühlraum', venue:SCHLACHT, acts:[
+    {t:'21H30', n:'EROSÃO Percussion Trio', tag:'Live', s:['EROSÃO Percussion Trio','Mariá Portugal','Burkhard Beins']},
+    {t:'23H30', n:'Extra',                  tag:'Live', s:['Peter Evans trumpet','Petter Eldh','Jim Black']},
+  ]},
+  { stage:'Specials', venue:EXTRA, specials:true, acts:[
+    {t:'06–22H', n:'Tower Of Sound',                 tag:'Nikolauskirche', s:['Klangturm Hamburg Veddel']},
+    {t:'13–20H', n:'Julia Bünnagel — All Humans Love',tag:'IKOB · gerngesehen', s:['Julia Bünnagel']},
+  ]},
+]},
+
+{ id:'fr', label:'Fr', long:'Freitag', date:'04.09.2026', iso:'2026-09-04',
+  accent:'#F3A6B9', accentInk:'#100E0D', groups:[
+  { stage:'Heuboden', venue:SCHLACHT, acts:[
+    {t:'11H',   n:'Sopa Do Dia'},
+    {t:'13H',   n:'Unchained'},
+    {t:'14H',   n:'Malu'},
+    {t:'16H30', n:'Bitsy Knox & Roger 3000', tag:'moli del tro', s:['Bitsy Knox','Roger 3000','moli del tro']},
+    {t:'17H30', n:'Kaity Fox'},
+    {t:'20H',   n:'Le Mystérieux Orchestre Électronique de Paris', tag:'Live', s:['Le Mystérieux Orchestre Électronique de Paris Versatile']},
+    {t:'21H',   n:'Gilb’R', tag:'DJ', s:['Gilb’R Versatile Records']},
+    {t:'23H',   n:'Nosedrip', tag:'DJ'},
+    {t:'01H',   n:'Time Is Away', tag:'DJ'},
+    {t:'03H',   n:'Mother'},
+    {t:'04H',   n:'Daniel[i]'},
+  ]},
+  { stage:'Kesselraum', venue:SCHLACHT, acts:[
+    {t:'14H',   n:'Detraex Corp'},
+    {t:'16H',   n:'Madteo', tag:'DJ'},
+    {t:'18H',   n:'Marc Matter', tag:'Live', s:['Marc Matter','Institut für Feinmotorik']},
+    {t:'19H30', n:'Low End Activist'},
+    {t:'21H',   n:'Mankiyan'},
+    {t:'23H',   n:'Ibrahim Alfa Jr'},
+    {t:'00H',   n:'Annabel Fraser'},
+    {t:'01H30', n:'Sister Marion'},
+    {t:'02H30', n:'Carrier'},
+  ]},
+  { stage:'Halle', venue:SCHLACHT, acts:[
+    {t:'15H',   n:'Ben Vince', tag:'Live'},
+    {t:'17H',   n:'Irisplus'},
+    {t:'19H30', n:'Vers'},
+    {t:'21H',   n:'ex_libris'},
+    {t:'22H',   n:'Carmen Villain'},
+    {t:'23H',   n:'Richard Fearless', tag:'DJ', s:['Richard Fearless','Death In Vegas']},
+    {t:'01H',   n:'SSTROM'},
+    {t:'02H',   n:'k-means'},
+  ]},
+  { stage:'Speicher', venue:SCHLACHT, acts:[
+    {t:'15H', n:'Axel Gilain & Julia Emmery', tag:'Live', s:['Axel Gilain','Julia Emmery']},
+    {t:'17H', n:'Ezra Feinberg', tag:'Live'},
+    {t:'01H', n:'RAP'},
+    {t:'03H', n:'Grace & Raffaela', s:['Grace','Raffaela']},
+  ]},
+  { stage:'Kühlraum', venue:SCHLACHT, acts:[
+    {t:'16H', n:'Dudù Kouaté & Julia Bilat', tag:'Live', s:['Dudù Kouaté','Julia Biłat']},
+    {t:'18H', n:'Big Hands & MYS', s:['Big Hands','MYS']},
+    {t:'20H', n:'Raisa K'},
+    {t:'22H', n:'Adjunct Ensemble', tag:'Live'},
+    {t:'00H', n:'Valentina Magaletti & Maria Bertel', tag:'Live', s:['Valentina Magaletti','Maria Bertel Selvhenter']},
+  ]},
+  { stage:'Nikolauskirche', venue:EXTRA, acts:[
+    {t:'14H', n:'Nadar Ensemble — The Voiceless Mass', tag:'Konzert', s:['Nadar Ensemble','Raven Chacon Voiceless Mass']},
+    {t:'16H', n:'Nadar Ensemble — The Voiceless Mass', tag:'Konzert', s:['Nadar Ensemble','Raven Chacon Voiceless Mass']},
+    {t:'18H', n:'Nadar Ensemble — The Voiceless Mass', tag:'Konzert', s:['Nadar Ensemble','Raven Chacon Voiceless Mass']},
+  ]},
+  { stage:'Werthkapelle', venue:EXTRA, acts:[
+    {t:'15H', n:'Raphael Loher', tag:'Live'},
+    {t:'17H', n:'Radio Hito', tag:'Live'},
+  ]},
+  { stage:'Tunnel', venue:EXTRA, acts:[
+    {t:'17H', n:'Davide Tidoni — When Sound Ends', tag:'Performance', s:['Davide Tidoni']},
+  ]},
+  { stage:'IKOB', venue:EXTRA, acts:[
+    {t:'19H', n:'Fabio Machiavelli & Ictus Ensemble', tag:'Live', s:['Fabio Machiavelli','Ictus Ensemble']},
+  ]},
+  { stage:'Jünglingshaus', venue:EXTRA, acts:[
+    {t:'20H', n:'Grisha223', tag:'Live'},
+    {t:'22H', n:'Demdike Stare & Cherrystones — Who Owns The Dark?', tag:'Live', s:['Demdike Stare','Cherrystones']},
+  ]},
+  { stage:'Friedenskirche', venue:EXTRA, acts:[
+    {t:'20H30', n:'Suzan Peeters', tag:'Live'},
+    {t:'21H30', n:'Peter Evans & Anushka Chkheidze', tag:'Live', s:['Peter Evans trumpet','Anushka Chkheidze']},
+  ]},
+  { stage:'Specials', venue:EXTRA, specials:true, acts:[
+    {t:'06–22H', n:'Tower Of Sound', tag:'Nikolauskirche', s:['Klangturm Hamburg Veddel']},
+    {t:'13–20H', n:'Julia Bünnagel — All Humans Love', tag:'IKOB', s:['Julia Bünnagel']},
+    {t:'13–20H', n:'ROTOЯ — Sonic Body', tag:'Eupen Plaza', s:['ROTOR Sonic Body']},
+    {t:'14–20H', n:'BRUINE', tag:'Pavillon', s:['Michael Thieke','Emilie Škrijelj','Tom Malmendier']},
+    {t:'16–20H', n:'Saba Arat — Yörük', tag:'Atelier Kunst und Bühne', s:['Saba Arat']},
+  ]},
+]},
+
+{ id:'sa', label:'Sa', long:'Samstag', date:'05.09.2026', iso:'2026-09-05',
+  accent:'#F5C63C', accentInk:'#100E0D', groups:[
+  { stage:'Heuboden', venue:SCHLACHT, acts:[
+    {t:'11H',   n:'Yeye & Shorlax', s:['Yeye','Shorlax']},
+    {t:'12H30', n:'DJ Sukram', tag:'DJ'},
+    {t:'14H',   n:'Samson AK'},
+    {t:'15H30', n:'Brunnera'},
+    {t:'16H30', n:'DJ Brom', tag:'DJ'},
+    {t:'18H30', n:'Pat Orburn'},
+    {t:'19H30', n:'Roger 23', tag:'DJ'},
+    {t:'21H',   n:'Falyakon'},
+    {t:'22H30', n:'Big Hands'},
+    {t:'23H30', n:'Lupini'},
+    {t:'01H30', n:'The Dengie Hundred'},
+    {t:'02H30', n:'Skyapnea'},
+    {t:'04H',   n:'Yu Ching'},
+    {t:'05H',   n:'aphasit'},
+  ]},
+  { stage:'Hinterhof', venue:SCHLACHT, acts:[
+    {t:'12H', n:'Carl Luis'},
+    {t:'14H', n:'Dip Friso'},
+    {t:'15H', n:'NTN'},
+    {t:'17H', n:'Sisso & Maiko', s:['Sisso','Maiko Singeli']},
+    {t:'18H', n:'Metrodome'},
+    {t:'20H', n:'Autumns'},
+    {t:'21H', n:'54 Kolaktiv'},
+  ]},
+  { stage:'Speicher', venue:SCHLACHT, acts:[
+    {t:'15H', n:'Gwen Sainte-Rose'},
+    {t:'17H', n:'Clement Nourry', tag:'Live'},
+    {t:'01H', n:'Elina Waage Mikalsen', tag:'Live'},
+    {t:'03H', n:'Natasha Pirard', tag:'Live · Zeile verdeckt'},
+  ]},
+  { stage:'Halle', venue:SCHLACHT, acts:[
+    {t:'14H',   n:'I’A’V'},
+    {t:'16H',   n:'Basma & Temir Alcy', s:['Basma','Temir Alcy']},
+    {t:'19H',   n:'Marathon Man'},
+    {t:'21H',   n:'Ambassade'},
+    {t:'22H',   n:'DJ Anderson Do Paraíso', tag:'DJ'},
+    {t:'23H',   n:'Bruce', tag:'DJ', s:['Bruce Hessle Audio']},
+    {t:'00H30', n:'Demdike Stare'},
+    {t:'02H',   n:'DJ Plead', tag:'DJ'},
+    {t:'03H',   n:'JASSS', tag:'DJ'},
+  ]},
+  { stage:'Kesselraum', venue:SCHLACHT, acts:[
+    {t:'15H', n:'Dudù Kouaté', tag:'Live'},
+    {t:'17H', n:'Dennis Aycicek'},
+    {t:'19H', n:'Rest Symbol'},
+    {t:'21H', n:'Will O’Brien'},
+    {t:'23H', n:'Gombeen & Doygen', s:['Gombeen','Doygen']},
+    {t:'00H', n:'Tiago'},
+    {t:'02H', n:'Robert Bergmann'},
+    {t:'03H', n:'Telva'},
+  ]},
+  { stage:'Kühlraum', venue:SCHLACHT, acts:[
+    {t:'16H', n:'Alepher'},
+    {t:'18H', n:'Brokenchord'},
+    {t:'20H', n:'Violeta Garcia', tag:'Live'},
+    {t:'22H', n:'The Mad Laboratory of Anti-Matter', tag:'Live · moli del tro', s:['The Mad Laboratory of Anti-Matter','moli del tro']},
+    {t:'00H', n:'Valentina Magaletti & YPY', tag:'Live', s:['Valentina Magaletti','YPY Koshiro Hino']},
+  ]},
+  { stage:'Pavillon', venue:EXTRA, acts:[
+    {t:'14H', n:'BRUINE', tag:'Live', s:['Michael Thieke','Emilie Škrijelj','Tom Malmendier']},
+  ]},
+  { stage:'Werthkapelle', venue:EXTRA, acts:[
+    {t:'14H30', n:'Nadelor', tag:'Live'},
+    {t:'16H30', n:'Memotone', tag:'Live'},
+    {t:'18H',   n:'Calcuta', tag:'Live'},
+  ]},
+  { stage:'IKOB', venue:EXTRA, acts:[
+    {t:'15H', n:'Maika Garnica', tag:'Live'},
+    {t:'19H', n:'Julia Bünnagel — All Humans Love', tag:'Live', s:['Julia Bünnagel']},
+  ]},
+  { stage:'Atelier Kunst und Bühne', venue:EXTRA, acts:[
+    {t:'15H',   n:'Saba Arat · Karlo Sono · Tarxun', tag:'Konzert', s:['Saba Arat','Karlo Sono','Tarxun']},
+    {t:'16H30', n:'Saba Arat · Karlo Sono · Tarxun', tag:'Konzert', s:['Saba Arat','Karlo Sono','Tarxun']},
+  ]},
+  { stage:'Eupen Plaza', venue:EXTRA, acts:[
+    {t:'15H30', n:'Bertel Schollaert & Hein Devos', tag:'Live', s:['Bertel Schollaert','Hein Devos']},
+    {t:'17H',   n:'ROTOЯ', tag:'Live', s:['ROTOR Sonic Body']},
+  ]},
+  { stage:'Tunnel', venue:EXTRA, acts:[
+    {t:'17H', n:'Davide Tidoni — When Sound Ends', tag:'Performance', s:['Davide Tidoni']},
+  ]},
+  { stage:'Friedenskirche', venue:EXTRA, acts:[
+    {t:'18H30', n:'Ravekoor — The Great Learning', tag:'Konzert', s:['Ravekoor','Cornelius Cardew The Great Learning']},
+    {t:'20H',   n:'Brian Parks', tag:'Live'},
+    {t:'21H30', n:'Ex-Easter Island Head', tag:'Live'},
+  ]},
+  { stage:'Eastbelgica Eventlocation', venue:EXTRA, acts:[
+    {t:'20H', n:'A Two Dogs Company & Ictus Ensemble — Protocol', tag:'Performance', s:['A Two Dogs Company','Ictus Ensemble']},
+  ]},
+  { stage:'Jünglingshaus', venue:EXTRA, acts:[
+    {t:'21H30', n:'Ensemble Musikfabrik plays Morton Feldman', tag:'Konzert', s:['Ensemble Musikfabrik','Morton Feldman']},
+  ]},
+  { stage:'Specials', venue:EXTRA, specials:true, acts:[
+    {t:'06–22H', n:'Tower Of Sound', tag:'Nikolauskirche', s:['Klangturm Hamburg Veddel']},
+    {t:'13–20H', n:'Fabio Machiavelli — Micro Breaths of a Blue Lung', tag:'IKOB', s:['Fabio Machiavelli']},
+    {t:'13–20H', n:'Julia Bünnagel — All Humans Love', tag:'IKOB', s:['Julia Bünnagel']},
+    {t:'14–20H', n:'Saba Arat — Yörük', tag:'Atelier Kunst und Bühne', s:['Saba Arat']},
+    {t:'15–20H', n:'BRUINE', tag:'Pavillon', s:['Michael Thieke','Emilie Škrijelj','Tom Malmendier']},
+  ]},
+]},
+
+{ id:'so', label:'So', long:'Sonntag', date:'06.09.2026', iso:'2026-09-06',
+  accent:'#100E0D', accentInk:'#FBE3DA', groups:[
+  { stage:'Heuboden', venue:SCHLACHT, acts:[
+    {t:'11H',   n:'Androo', tag:'DJ'},
+    {t:'12H30', n:'Laszlo Umbreit'},
+    {t:'13H30', n:'Loma Doom'},
+    {t:'15H30', n:'Gerald Cleaver'},
+    {t:'16H30', n:'Moli Del Tro', tag:'moli del tro'},
+    {t:'18H',   n:'WTT?'},
+    {t:'19H',   n:'Sagome'},
+    {t:'21H',   n:'Mr Clarinet'},
+    {t:'22H',   n:'Wino Wagon DJ’s', tag:'DJ'},
+  ]},
+  { stage:'Hinterhof', venue:SCHLACHT, acts:[
+    {t:'12H',   n:'Capablanca', tag:'DJ'},
+    {t:'14H30', n:'opo', tag:'Live'},
+    {t:'15H30', n:'Akuma No Numa'},
+    {t:'18H30', n:'R&R'},
+  ]},
+  { stage:'Halle', venue:SCHLACHT, acts:[
+    {t:'17H', n:'Karen Willems, Nicola Lancerotti, Thomas Olbrechts', tag:'Live', s:['Karen Willems','Nicola Lancerotti','Thomas Olbrechts']},
+    {t:'19H', n:'both more and less than its …', tag:'Unklar · Zeile verdeckt'},
+    {t:'21H', n:'Garth Erasmus & Broken String Ensemble', tag:'Live', s:['Garth Erasmus','Broken String Ensemble','Stefan Schneider TAL']},
+  ]},
+  { stage:'Kesselraum', venue:SCHLACHT, acts:[
+    {t:'15H', n:'Employee & Franco Franco', s:['Employee','Franco Franco']},
+    {t:'17H', n:'Elizabeth Davis'},
+    {t:'19H', n:'Satch Hoyt', tag:'Live'},
+    {t:'21H', n:'Les Marquises', tag:'Live'},
+  ]},
+  { stage:'Kühlraum', venue:SCHLACHT, acts:[
+    {t:'16H', n:'Brandon Lopez', tag:'Live'},
+    {t:'18H', n:'Klangwart', tag:'Live'},
+    {t:'20H', n:'Brandon Lopez, Gerald Cleaver, Pat Thomas', tag:'Live', s:['Brandon Lopez','Gerald Cleaver','Pat Thomas piano']},
+    {t:'22H', n:'Tara Clerkin Trio', tag:'Live'},
+  ]},
+  { stage:'Speicher', venue:SCHLACHT, acts:[
+    {t:'17H', n:'Eva Reiter — Wilderness of Mirrors', tag:'Konzert', s:['Eva Reiter']},
+    {t:'19H', n:'Zeynep Ayşe Hatipoğlu', tag:'Live'},
+    {t:'21H', n:'crys cole & Marja Ahti', tag:'Live', s:['crys cole','Marja Ahti']},
+  ]},
+  { stage:'Friedenskirche', venue:EXTRA, acts:[
+    {t:'14H30', n:'Antonina Nowacka', tag:'Live'},
+    {t:'15H30', n:'Elaine Howley', tag:'Live'},
+  ]},
+  { stage:'Specials', venue:EXTRA, specials:true, acts:[
+    {t:'06–22H', n:'Tower Of Sound', tag:'Nikolauskirche', s:['Klangturm Hamburg Veddel']},
+    {t:'12–16H', n:'BRUINE', tag:'Pavillon', s:['Michael Thieke','Emilie Škrijelj','Tom Malmendier']},
+    {t:'13–18H', n:'Fabio Machiavelli — Micro Breaths of a Blue Lung', tag:'IKOB', s:['Fabio Machiavelli']},
+    {t:'13–18H', n:'Julia Bünnagel — All Humans Love', tag:'IKOB', s:['Julia Bünnagel']},
+    {t:'13–18H', n:'ROTOЯ — Sonic Body', tag:'Eupen Plaza', s:['ROTOR Sonic Body']},
+    {t:'14–18H', n:'Saba Arat — Yörük', tag:'Atelier Kunst und Bühne', s:['Saba Arat']},
+  ]},
+]},
+];
+
+/* ------------------------------------------------------------------ *
+ * Kurzbeschreibungen, nach Act-Name. Was hier fehlt, hat im Netz
+ * nichts Belastbares hergegeben – dort bleibt es bei den Such-Links.
+ * ------------------------------------------------------------------ */
+const INFO = {
+  'Val Clipp':'DJ und Musiker aus Den Haag, bürgerlich Luca van Grinsven, Teil der Kollektive Off Center und Plor. Produktionen zwischen Footwork, Dub und Grime.',
+  'Laura Not':'Musikerin und DJ, macht Radioshows zu experimenteller Musik (u.a. (x)=musik auf Lyl Radio), betreibt das Label Final Image mit. Daneben Collage-Künstlerin.',
+  'L. Jacobs':'Alias von Lennert Jacobs: experimentelle, aber melodische Elektronik. Neues Album „Behind The Great Curve“ (April 2026, blickwinkel), produziert von Milan W. Spielt außerdem bei The Germans und MDC III.',
+  'Camille Maria':'Plattenselektor aus den Niederlanden, Mitkurator des DIY-Kollektivs SOW. Sets zwischen Vintage Wave, Post-Punk, Dub, Techno und Drum & Bass.',
+  'Marc Matter':'Schweizer Klangkünstler. Seine Live-Sets bauen „Sample-Poetry“ aus Radio-, TV- und Internetfragmenten, die zu Clustern und Loops rekombiniert werden. Bekannt aus Institut für Feinmotorik, The Durian Brothers und dem Salon des Amateurs.',
+  'Jaan':'Taucht in den offiziellen Line-up-Listen nicht auf — vermutlich eine kurzfristige Ergänzung. Hier hilft nur: hingehen und überraschen lassen.',
+  'great area':'In London ansässig. Veröffentlichungen u.a. „Light Decline“ (Relaxin Records, 2024) und „Follow Your Nature“ (2022).',
+  'YPY & Ben Vince':'YPY ist das elektronische Soloprojekt von Koshiro Hino aus Osaka, der auch die Rhythmus-Ensembles goat und bonanzas leitet. Ben Vince ist Saxofonist aus London, der sein Instrument stark elektronisch verarbeitet.',
+  'Munda':'Im Line-up bestätigt, sonst kaum Spuren im Netz. Blind reingehen oder vorher kurz selbst suchen.',
+  'Pittori Locali':'Trio aus David Wilkie, Till Hormann und Zeno Poggioni. Album zwischen 2022 und 2025 in Amsterdam und Berlin aufgenommen — mit DX7, Kawai K4, Saxofon, Ocarina und E-MU-Samples. Erschienen bei Paesaggi Records.',
+  'Front Page Leslie':'Aus Brüssel, Teil des moli-del-tro-Showcases. Das Album „Wings On The Ceiling“ (2025) entstand in einem Zug auf einem verstimmten Klavier im Gemeinschaftsraum der Saint-Michel-Klinik.',
+  'Ak’Chamel':'Anonymes Duo aus Texas, das unter wechselnden Namensanhängseln auftritt. Wüstenverbrannte Psychedelik, „post-apokalyptischer Schamanismus“ und Ritual-Folk — live in selbstgebauten Masken und Kostümen, mit selbstgebauten Instrumenten.',
+  'EROSÃO Percussion Trio':'Mariá Portugal (BR) mit den Berliner Perkussionisten Burkhard Beins (DE) und Emilio Gordoa (MX). Stark improvisiert: unkonventionelle Perkussion, Feldaufnahmen, Live-Elektronik, perkussiv gespielter E-Bass.',
+  'Extra':'Peter Evans (Trompete), Petter Eldh (Bass), Jim Black (Schlagzeug). Jazz, Noise, Elektronik und rohe Improvisation.',
+  'Tower Of Sound':'Ursprünglich der Klangturm Hamburg-Veddel, für die Festivaldauer in St. Nikolaus installiert. Das Kirchengeläut wird abgeschaltet und durch die Musik der Installation ersetzt, die Zeit und Raum anders markiert. Läuft den ganzen Tag im Hintergrund der Stadt.',
+  'Julia Bünnagel — All Humans Love':'Kölner Bildhauerin und Klangkünstlerin, hier im Showcase von gerngesehen. „ALL HUMANS LOVE“ hat sie zuvor in der Kunsthalle Nürnberg als Kombination aus Klang, Text und Bild gezeigt — inklusive Sticker zum Weitertragen. Läuft tagsüber, gut vor dem Abendprogramm.',
+
+  /* --- Freitag --- */
+  'Le Mystérieux Orchestre Électronique de Paris':'Anonymes Pariser Projekt auf Versatile Records, selbstbetiteltes Album Anfang 2024. Generative Musik aus Analogsynths und Feldaufnahmen, Stücke um die zehn Minuten — und ein Dogma: kein einziges perkussives Instrument. Zwischen Ambient, New Age und Krautrock.',
+  'Gilb’R':'Gilbert Cohen, Kopf von Versatile Records in Paris und eine Hälfte von Chateau Flight mit I:Cube. Als DJ enzyklopädisch unterwegs.',
+  'Nosedrip':'Ziggy Devriendt aus Belgien, betreibt das Label Stroom und eine monatliche NTS-Show. Sets aus New Age, New Wave, French Psych, Minimal Synth und Post-Punk.',
+  'Madteo':'Produzent exquisit schräger Platten und Liebhaber billigen Vinyls — House, Dub und Hip-Hop, konsequent gegen den Strich gebürstet.',
+  'Low End Activist':'Aus Bristol, Host der Peak-Oil-Reihe. Wurzeln in der südwestenglischen Free-Party-Szene, heute dunkle UK-Rave-Zwischenräume: ausgezehrte Ambience, ruheloser Tech-Step, ausgebombte Subbässe.',
+  'Carrier':'Produzent an der Schnittstelle von Tech-Step, Drum & Bass und Industrial — wird oft im selben Atemzug mit Raime genannt.',
+  'Ben Vince':'Saxofonist aus London, der sein Instrument stark elektronisch verarbeitet. Spielt am Donnerstag auch im Duo mit YPY.',
+  'Carmen Villain':'Carmen Maria Hillestad, norwegisch-mexikanisch. Atmosphärische Musik aus Feldaufnahmen, Flöte, Klavier, Stimme, Zither, programmierten Drums und Synths — Fourth-World-Ambient mit elektroakustischem Einschlag.',
+  'Richard Fearless':'Richard Maguire, Gründer von Death In Vegas und Black Acid. 2025 erschien „Death Mask“, das erste Death-In-Vegas-Album nach neun Jahren.',
+  'Raisa K':'Raisa Khan, Songwriterin und Produzentin in London, außerdem bei Good Sad Happy Bad. Ihr Solodebüt „Affectionately“ kam im Frühjahr 2025.',
+  'Valentina Magaletti & Maria Bertel':'Magaletti ist als Schlagzeugerin und Multiinstrumentalistin in Eupen fast schon Stammgast — und spielt an diesem Wochenende zwei Duos. Maria Bertel ist dänische Posaunistin und Improvisatorin, bekannt aus Selvhenter.',
+  'Dudù Kouaté & Julia Bilat':'Kouaté, senegalesischer Perkussionist und Mitglied des Art Ensemble of Chicago, beherrscht über 200 Instrumente, viele aus wiederverwertetem Material. Julia Biłat ist Cellistin und Improvisatorin in Berlin. Als Duo: Cello gegen Perkussion.',
+  'Bitsy Knox & Roger 3000':'Bitsy Knox ist Künstlerin, Musikerin, Autorin und Radiomacherin aus Vancouver, lebt in Berlin. Das gemeinsame Album „the ears of animals“ erschien im Oktober 2025 auf moli del tro — dem Brüssel/Pariser Label, das übers Wochenende mehrere Slots bespielt.',
+  'Nadar Ensemble — The Voiceless Mass':'Das belgische Nadar Ensemble spielt „Voiceless Mass“ von Raven Chacon — das Stück, für das der Diné-Komponist 2022 den Pulitzerpreis für Musik bekam, geschrieben für Orgel und Ensemble im Kirchenraum. Dreimal am Nachmittag in St. Nikolaus.',
+  'Davide Tidoni — When Sound Ends':'Ein Archiv von Aktionen rund um den Verlust von Klang: Lautsprecher, Mikrofone und Membranen in unterschiedlichen Stadien des Zerfalls, die meisten längst stumm — Objekte zum Nachdenken über Vergänglichkeit und Körperlichkeit.',
+  'Fabio Machiavelli & Ictus Ensemble':'Ictus ist das Brüsseler Ensemble für zeitgenössische Musik, hier im IKOB gemeinsam mit dem Klangkünstler Fabio Machiavelli, der übers Wochenende auch eine Installation im Haus zeigt.',
+  'Grisha223':'Aus Tromsø, arbeitet mit Klang, Raum und (Sub-)Kulturkritik. Klassischer Hintergrund, große Liebe zu roher Elektronik: zwischen ambienten E-Violin-Improvisationen und beatlastigen Clubsets.',
+  'Demdike Stare & Cherrystones — Who Owns The Dark?':'Demdike Stare sind Sean Canty und Miles Whittaker aus Manchester, seit 2009 unterwegs zwischen Dark Ambient, Library Music, Jazz und Industrial. Dazu der Digger Cherrystones.',
+  'Suzan Peeters':'Belgische Akkordeonistin und Improvisatorin (*1999) in Brüssel. Sie interessiert der elektronische Charakter des Akkordeons und sucht Klänge, die mit dem rustikalen Klischee des Instruments nichts mehr zu tun haben. Album „Cassotto“ auf Aguirre.',
+  'Peter Evans & Anushka Chkheidze':'Peter Evans ist einer der extremsten Trompeter der freien Improvisation (spielt am Donnerstag auch bei Extra). Anushka Chkheidze ist Produzentin aus Tbilisi, unterwegs zwischen Ambient und IDM.',
+  'ROTOЯ — Sonic Body':'Installation des Wiener Komponisten und Produzenten Peter Kutin mit Patrick Lechner: eine rotierende Klangskulptur, die zu einem hologrammartigen „sonic body“ wird. Tagsüber auf dem Eupen Plaza.',
+  'ROTOЯ':'Peter Kutin und Patrick Lechner spielen ihre rotierende Klangskulptur live — dieselbe Arbeit, die tagsüber als Installation auf dem Eupen Plaza läuft.',
+  'BRUINE':'Trio aus Michael Thieke (Klarinette, Berlin), Emilie Škrijelj (Akkordeon) und Tom Malmendier (Perkussion). Ihr Album „Bruine“ erschien 2024 auf dem eigenen Label eux sæm — Musik zwischen Konzert und Klanginstallation.',
+  'Saba Arat — Yörük':'Saba Arat arbeitet mit gewebten Textilien, die durch Verkabelung und Sensorik zu Instrumenten werden — Berührung wird zu MIDI. Läuft übers Wochenende im Atelier Kunst und Bühne.',
+  'Fabio Machiavelli — Micro Breaths of a Blue Lung':'Wochenendfüllende Klanginstallation im IKOB; Machiavelli spielt am Freitagabend außerdem mit dem Ictus Ensemble.',
+
+  /* --- Samstag --- */
+  'Samson AK':'Aus London, Platten auf MAL Recordings, Berceuse Heroique und dem eigenen Label Ideal State. Linksdrehender Techno, Ambient, Bass — und das meiste dazwischen.',
+  'Roger 23':'Seit 1997 Teil der Swayzak-Familie, DJ ihres Soundsystems und Produzent auf Swayzak Records, 240 Volts und Volt Musik.',
+  'The Dengie Hundred':'Soloprojekt einer Hälfte des Londoner Duos Blackwater, benannt nach der Halbinsel in Essex. Veröffentlichungen u.a. auf Sagome und bei Demdike Stares Label; „Lammas Land“ kreist um die Walthamstow Marshes.',
+  'Sisso & Maiko':'Singeli aus Dar es Salaam in Höchstgeschwindigkeit. Sisso ist die Schlüsselfigur des Sisso-Records-Studios, Maiko Produzent und Keyboarder aus der Region Morogoro; gemeinsam „Singeli Ya Maajabu“ auf Nyege Nyege Tapes.',
+  'Autumns':'Soloprojekt von Christian Donaghey aus Derry: elektronischer Post-Punk aus peitschenden Rhythmen, stark bearbeiteten Vocals, No-Wave-Gitarren und Dub-Technik am Mischpult.',
+  'Elina Waage Mikalsen':'Künstlerin und Musikerin aus Tromsø (*1992). Sie arbeitet mit Klang, Textil, Text, Performance und Installation aus einem samischen Weltverständnis heraus. Ihre Zusammenarbeit mit Grisha223 kommt über das Insomnia Festival nach Eupen.',
+  'Natasha Pirard':'Experimentelle Elektronik aus Gent: analoge Synthese, Tapeloops, Violine, Stimme und Feldaufnahmen. Zuletzt „Fernande, Cecile“ (2025), gewidmet ihrer Mutter und ihrer verstorbenen Großmutter. Achtung: Diese Zeile war im Timetable-Screenshot verdeckt — Uhrzeit vor Ort prüfen.',
+  'Demdike Stare':'Duo aus Manchester: Sean Canty und Miles Whittaker, seit 2009. Mixtapes und Alben ziehen Jazz, Library Music und Industrial in einen dunklen Ambient-Sog.',
+  'DJ Plead':'Produzent aus Melbourne/Naarm. Clubmusik aus Polyrhythmen und Post-Dubstep, die unterkühlten Techno in Bassgewicht übersetzt.',
+  'DJ Anderson Do Paraíso':'Schlüsselfigur des Funk BH aus Belo Horizonte — dunkler und minimaler als der übliche brasilianische Trommelsturm, mit Anleihen bei altem HipHop, Folk und Jazz. Album „Queridão“ auf Nyege Nyege Tapes.',
+  'Violeta Garcia':'Cellistin, Komponistin und Improvisatorin zwischen freier Improvisation, zeitgenössischer Musik und elektronischem Noise — mit Violoncello, Analogsynths und eigener Stimme.',
+  'The Mad Laboratory of Anti-Matter':'Konzert im Rahmen des Showcases von moli del tro, dem Label aus Brüssel und Paris.',
+  'Valentina Magaletti & YPY':'Das zweite Duo der Schlagzeugerin an diesem Wochenende, diesmal mit Koshiro Hino alias YPY aus Osaka, der auch die Ensembles goat und bonanzas leitet.',
+  'Memotone':'William Yates aus Bristol, Multiinstrumentalist und Produzent zwischen Jazz, Folk, zeitgenössischer Klassik, Ambient und Fourth World. Platten u.a. auf Black Acre, Project Mooncircle und Brownswood.',
+  'Nadelor':'Elektroakustisches Live-Duo aus Leipzig: die Klangkünstlerin burgund t brandt und der Multiinstrumentalist Nime. Sie loten akustische Räume und die Beziehungen zwischen Klangobjekten aus.',
+  'Maika Garnica':'Bildhauerin und Musikerin in Antwerpen. Sie baut ihre Instrumente meist selbst, oft aus Ton und über den Atem gespielt; 2015 gründete sie das Ensemble Sui Moon.',
+  'Ravekoor — The Great Learning':'Cornelius Cardews „The Great Learning“ ist ein Zyklus aus sieben Paragraphen über Konfuzius-Texte, geschrieben für große Gruppen aus geschulten und ungeschulten Stimmen — aus den ersten Aufführungen ging das legendäre Scratch Orchestra hervor. Hier vom Ravekoor.',
+  'Ex-Easter Island Head':'Experimentelles Kollektiv aus Liverpool, 2009 um Benjamin D. Duvall gegründet. Aktuell ein Quartett mit Benjamin Fair, Jonathan Hering und Andrew PM Hunt.',
+  'A Two Dogs Company & Ictus Ensemble — Protocol':'Uraufführung an diesem Samstag: A Two Dogs Company — die Struktur hinter der Arbeit des Künstlers Kris Verdonck — zusammen mit dem Brüsseler Ictus Ensemble. Eigene Location, entsprechend früh losgehen.',
+  'Ensemble Musikfabrik plays Morton Feldman':'Zum Feldman-Zentenarium spielt das Kölner Ensemble Musikfabrik zwei Stücke: „The Viola in My Life 2“ (1970) und „Clarinet and String Quartet“ (1983).',
+  'Dudù Kouaté':'Senegalesischer Perkussionist und Mitglied des Art Ensemble of Chicago, virtuos auf über 200 Instrumenten — viele davon aus wiederverwertetem Material. Am Freitag außerdem im Duo mit Julia Biłat.',
+
+  /* --- Sonntag --- */
+  'Loma Doom':'Femke Dekker aus Amsterdam, Radioveteranin und Selektorin: dunkle Rhythmen aus aller Welt, launische Psychedelik, leichtfüßiger Folk und glatte Elektronik.',
+  'Capablanca':'Hugo Capablanca, aus Spanien über Kassel nach Berlin. DJ und Produzent mit Hang zum Umweg — spielerisch, konzeptuell und selten auf dem ausgetretenen Pfad.',
+  'Gerald Cleaver':'Jazzschlagzeuger aus Detroit (*1963), seit über zwanzig Jahren eine der vorwärtsgewandtesten Stimmen am Instrument — zuletzt auch mit elektronischen Soloarbeiten. Spielt abends nochmal im Trio im Kühlraum.',
+  'Moli Del Tro':'Das Label moli del tro aus Brüssel und Paris (Laurence Creyf und Gilles Vanneste), das übers Wochenende mehrere Konzerte kuratiert — u.a. Front Page Leslie, Bitsy Knox & Roger 3000 und The Mad Laboratory of Anti-Matter.',
+  'Sagome':'Londoner Label und Veranstalter für Zusammenarbeiten über Grenzen hinweg; von dort kommen unter anderem Platten von The Dengie Hundred.',
+  'Karen Willems, Nicola Lancerotti, Thomas Olbrechts':'Belgisches Trio: Karen Willems an Elektronik, Stimme, Panflöte und Perkussion, Thomas Olbrechts am Altsaxofon, dazu Nicola Lancerotti. Ihr gemeinsames „III - IV - II“ erschien im November 2025 auf seminal records.',
+  'both more and less than its …':'Diese Zeile war im Timetable-Screenshot von einer Story-Blase verdeckt; der Titel ließ sich nicht vollständig rekonstruieren. Vor Ort im gedruckten Programm nachsehen.',
+  'Garth Erasmus & Broken String Ensemble':'Garth Erasmus ist Musiker und Aktivist für die Rechte der First Nations Südafrikas: Er baut und spielt Instrumente nach Khoisan-Wissenssystemen, gehört zu Khoi Khonnexion und ist eine wichtige Figur der Free-Jazz-Szene Kapstadts. Im Broken String Ensemble spielt u.a. Stefan Schneider vom Label TAL.',
+  'Satch Hoyt':'In London geboren, jamaikanisch-britischer Herkunft, lebt in Berlin. Skulptur, Klanginstallation, Malerei und Musik kreisen bei ihm um den „Eternal Afro-Sonic Signifier“ — die Bewegung von Klang durch die afrikanische Diaspora.',
+  'Les Marquises':'Französische Experimental-Pop-Gruppe aus Lyon, 2010 von Jean-Sébastien Nouveau gegründet, der für jedes Album wechselnde Gäste dazuholt.',
+  'Brandon Lopez':'Kontrabassist und Komponist aus New York, unterwegs in der freien Improvisation und auf der Suche nach neuen Klangmöglichkeiten des Instruments. Spielt hier zweimal — solo und im Trio.',
+  'Brandon Lopez, Gerald Cleaver, Pat Thomas':'Kontrabass, Schlagzeug, Klavier. Pat Thomas (*1960) aus Oxford ist eine der eigenwilligsten Stimmen der britischen Improvisationsszene, zwischen Jazz, Neuer Musik und Elektronik.',
+  'Klangwart':'Deutsches Duo aus Markus Detmer und Timo Reuber. Ihr Debüt „Immerland“ (1997) bestand aus zwei langen Suiten zwischen Ambient, Kosmische und Post-Rock — seither ein Geheimtipp.',
+  'Tara Clerkin Trio':'Aus Bristol, seit 2020: Tara Clerkin (Gesang), Sunny Joe Paradisos (Schlagzeug) und Patrick Benjamin (Keyboard). Beschrieben zwischen Jazz-Rock, Avant-Rock und Trip-Hop.',
+  'Eva Reiter — Wilderness of Mirrors':'Die Wiener Komponistin und Gambistin Eva Reiter (*1976) bewegt sich zwischen Alter und Neuer Musik. „The Wilderness of Mirrors“ geht von Bachs d-Moll-Partita aus und überführt sie in eine surreale, dichte Elektronik, die ausschließlich aus Gitarrensamples besteht. Gespielt vom Nadar Ensemble.',
+  'Zeynep Ayşe Hatipoğlu':'Cellistin, Improvisatorin und elektroakustische Komponistin in Berlin. Sie hat Cello und Komposition sowohl in westlicher Klassik als auch im türkischen Makam studiert und arbeitet bewusst zwischen den Genres.',
+  'crys cole & Marja Ahti':'crys cole arbeitet mit elektroakustischer Komposition, Performance, Skulptur und Klanginstallation. Marja Ahti (*1981) ist schwedisch-finnische Klangkünstlerin und baut aus Feldaufnahmen, Alltagsgegenständen, analoger Synthese und akustischen Instrumenten sehr präzise Verläufe.',
+  'Antonina Nowacka':'Polnische Sängerin und Komponistin (*1992), zuerst bekannt aus dem Duo WIDT mit ihrer Schwester. Ihre Stimme klingt streckenweise wie ein Theremin; sie hat indische wie westliche Klassik studiert und tritt am liebsten in Kirchen, Klöstern und alten Räumen auf.',
+  'Elaine Howley':'Experimentelle Musikerin und Sängerin aus Tipperary, lebt in Cork. Mitglied von The Altered Hours, dem Ambient-Trio Crevice und dem Duo HowlBux; ihr Solodebüt heißt „The Distance Between Heart and Mouth“.',
+};
+
+/* ------------------------------------------------------------------ *
+ * Zeitlogik
+ * ------------------------------------------------------------------ */
+const MAX_SLOT = 120;   // Minuten, mit denen eine offene Endzeit gedeckelt wird
+const ALLDAY   = 240;   // ab dieser Dauer gilt ein Slot als Dauerinstallation
+
+function toMinutes(str){
+  const m = /^(\d{1,2})\s*[H:]\s*(\d{2})?$/.exec(str.trim());
+  if (!m) return null;
+  return (+m[1]) * 60 + (m[2] ? +m[2] : 0);
+}
+
+/* '13–20H' -> {from:780, to:1200} ; '22H30' -> {from:1350, to:null}
+   Als Trenner wird alles akzeptiert, was weder Ziffer noch H ist — so überlebt
+   der Parser auch einen Gedankenstrich, den ein Browser falsch dekodiert hat. */
+function parseSlot(t){
+  const range = /^(\d{1,2})[^\dH]{1,4}(\d{1,2})\s*H$/.exec(t.trim());
+  if (range) return { from:(+range[1]) * 60, to:(+range[2]) * 60 };
+  return { from: toMinutes(t), to: null };
+}
+
+/* Startzeiten in fortlaufende Minuten ab 00:00 des Festivaltags umrechnen:
+   fällt die Uhrzeit gegenüber dem Vorgänger derselben Bühne, ist es die Nacht danach.
+   Acts mit unlesbarer Zeit bleiben in der Liste — nur ohne Zeitlogik. */
+function buildIndex(){
+  DAYS.forEach(day => {
+    day.all = [];
+    day.groups.forEach(group => {
+      let prev = -1, base = 0;
+      group.acts.forEach(a => {
+        a.group = group;
+        a.id    = day.id + '|' + group.stage + '|' + a.t + '|' + a.n;
+        day.all.push(a);
+
+        const slot = parseSlot(a.t);
+        if (slot.from === null){ a.start = null; a.end = null; return; }
+        if (!group.specials){
+          if (slot.from < prev) base += 1440;
+          prev = slot.from;
+        }
+        a.start = slot.from + base;
+        a.end   = slot.to !== null ? slot.to + base + (slot.to <= slot.from ? 1440 : 0) : null;
+      });
+      /* offene Endzeiten: bis zum nächsten Act derselben Bühne, gedeckelt */
+      group.acts.forEach((a, i) => {
+        if (a.start === null || a.end !== null) return;
+        const next = group.acts.slice(i + 1).find(x => x.start !== null);
+        a.end = next ? Math.min(next.start, a.start + MAX_SLOT) : a.start + 90;
+      });
+      group.acts.forEach(a => {
+        a.allday = a.start !== null && a.end - a.start >= ALLDAY;
+      });
+    });
+    day.all.sort((x, y) =>
+      (x.start === null ? Infinity : x.start) - (y.start === null ? Infinity : y.start) ||
+      x.group.stage.localeCompare(y.group.stage));
+  });
+}
+buildIndex();
+
+/* Überschneidungen unter den gemerkten Acts eines Tages */
+function clashesFor(act, day){
+  if (act.allday || act.start === null) return [];
+  return day.all.filter(o =>
+    o !== act && o.start !== null && marked.has(o.id) && !o.allday &&
+    act.start < o.end && o.start < act.end
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Jetzt-Marker
+ * ------------------------------------------------------------------ */
+function brusselsParts(){
+  const d = NOW_OVERRIDE ? new Date(NOW_OVERRIDE) : new Date();
+  try {
+    const f = new Intl.DateTimeFormat('en-CA', {
+      timeZone:'Europe/Brussels', year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', hour12:false });
+    const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value]));
+    return { date:`${p.year}-${p.month}-${p.day}`, min:(+p.hour % 24) * 60 + (+p.minute) };
+  } catch (e) {
+    return { date:d.toISOString().slice(0, 10), min:d.getHours() * 60 + d.getMinutes() };
+  }
+}
+
+/* Minuten seit 00:00 des jeweiligen Festivaltags, oder null wenn zu weit weg */
+function nowOn(day){
+  const now = brusselsParts();
+  const diff = Math.round((Date.parse(now.date) - Date.parse(day.iso)) / 86400000);
+  if (diff < 0 || diff > 1) return null;
+  const min = diff * 1440 + now.min;
+  return min <= 1800 ? min : null;   // bis 06:00 der Folgenacht
+}
+function liveDay(){
+  for (const d of DAYS){
+    const m = nowOn(d);
+    if (m !== null && m >= 8 * 60) return d;   // ab 08:00 des Festivaltags
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ *
+ * Zustand
+ * ------------------------------------------------------------------ */
+let marked = new Set();
+let filter = 'all';
+let dayIx  = 0;
+let hidden = new Set();          // ausgeblendete Bühnen des aktuellen Tages
+let autoJump = false;
+
+const listEl   = document.getElementById('list');
+const countEl  = document.getElementById('count');
+const daysEl   = document.getElementById('days');
+const stagesEl = document.getElementById('stages');
+const titleEl  = document.getElementById('day-title');
+const dateEl   = document.getElementById('day-date');
+const bAll     = document.getElementById('f-all');
+const bMine    = document.getElementById('f-mine');
+const bPlan    = document.getElementById('f-plan');
+
+function loadState(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) marked = new Set(JSON.parse(raw));
+  } catch (e) { /* privater Modus o.ä. – dann eben ohne Merkliste */ }
+
+  const live = liveDay();
+  if (live){
+    dayIx = DAYS.indexOf(live);
+    autoJump = true;
+  } else {
+    try {
+      const d = localStorage.getItem(KEY_DAY);
+      const ix = DAYS.findIndex(x => x.id === d);
+      if (ix >= 0) dayIx = ix;
+    } catch (e) { /* egal */ }
+  }
+}
+function save(){
+  try {
+    localStorage.setItem(KEY, JSON.stringify([...marked]));
+    localStorage.setItem(KEY_DAY, DAYS[dayIx].id);
+  } catch (e) {
+    countEl.textContent = 'nicht gespeichert';
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Rendern
+ * ------------------------------------------------------------------ */
+const enc = encodeURIComponent;
+/* Spotify steht vorn, weil seine App den Suchbegriff aus der URL zuverlaessig
+   uebernimmt. Bandcamp und SoundCloud verschlucken ihn beim Sprung in die App
+   haeufig — dafuer gibt es den Kopieren-Knopf. */
+const services = [
+  ['Spotify',    q => `https://open.spotify.com/search/${enc(q)}`],
+  ['Bandcamp',   q => `https://bandcamp.com/search?q=${enc(q)}`],
+  ['YouTube',    q => `https://www.youtube.com/results?search_query=${enc(q)}`],
+  ['SoundCloud', q => `https://soundcloud.com/search?q=${enc(q)}`],
+];
+
+/* Namen in die Zwischenablage — Rettungsanker, wenn eine App auf ihrer
+   Startseite landet statt beim Suchergebnis: dort einfach einfuegen. */
+function copyToClipboard(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand && document.execCommand('copy');
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error('copy failed'));
+  });
+}
+
+function renderDays(){
+  daysEl.innerHTML = '';
+  DAYS.forEach((d, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', i === dayIx);
+    b.innerHTML = '';
+    b.append(d.label);
+    const em = document.createElement('em');
+    em.textContent = d.date.slice(0, 5);
+    b.appendChild(em);
+    b.addEventListener('click', () => {
+      if (dayIx === i) return;
+      dayIx = i; hidden = new Set(); autoJump = false;
+      save(); renderAll(); window.scrollTo({ top:0 });
+    });
+    daysEl.appendChild(b);
+  });
+}
+
+function renderStages(day){
+  stagesEl.innerHTML = '';
+  if (filter === 'plan'){ stagesEl.style.display = 'none'; return; }
+  stagesEl.style.display = 'flex';
+  day.groups.forEach(g => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = g.stage;
+    b.setAttribute('aria-pressed', !hidden.has(g.stage));
+    b.addEventListener('click', () => {
+      hidden.has(g.stage) ? hidden.delete(g.stage) : hidden.add(g.stage);
+      renderAll();
+    });
+    stagesEl.appendChild(b);
+  });
+  if (hidden.size){
+    const r = document.createElement('button');
+    r.type = 'button'; r.className = 'reset'; r.textContent = 'alle Bühnen';
+    r.addEventListener('click', () => { hidden = new Set(); renderAll(); });
+    stagesEl.appendChild(r);
+  }
+}
+
+/* Stern als SVG statt als Zeichen ★/☆ — so hängt die Darstellung weder an der
+   Schriftart des Geräts noch an einer korrekt dekodierten Datei. */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function starIcon(filled){
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', 'M12 3.2l2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.24l-5.5 2.89 1.05-6.12L3.1 9.67l6.15-.9z');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.6');
+  path.setAttribute('stroke-linejoin', 'round');
+  path.setAttribute('fill', filled ? 'currentColor' : 'none');
+  svg.appendChild(path);
+  return svg;
+}
+
+function actRow(act, day, nowMin, showStage){
+  const row = document.createElement('div');
+  row.className = 'act' + (marked.has(act.id) ? ' on' : '');
+  const timed   = act.start !== null;
+  const running = timed && nowMin !== null && nowMin >= act.start && nowMin < act.end;
+  if (timed && nowMin !== null && nowMin >= act.end) row.classList.add('past');
+
+  const head = document.createElement('button');
+  head.className = 'head';
+  head.type = 'button';
+  head.setAttribute('aria-expanded', 'false');
+
+  const time = document.createElement('div');
+  time.className = 'time';
+  time.textContent = act.t;
+
+  const mid = document.createElement('div');
+  const nm = document.createElement('div');
+  nm.className = 'name';
+  const nmText = document.createElement('span');
+  nmText.textContent = act.n;
+  nm.appendChild(nmText);
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+
+  if (running){
+    const l = document.createElement('i');
+    l.className = 'live-now'; l.textContent = 'läuft';
+    meta.appendChild(l);
+  }
+  if (showStage){
+    const st = document.createElement('i');
+    st.textContent = act.group.stage;
+    meta.appendChild(st);
+  }
+  if (act.tag){
+    const tg = document.createElement('i');
+    tg.textContent = act.tag;
+    meta.appendChild(tg);
+  }
+  if (marked.has(act.id)){
+    const cl = clashesFor(act, day);
+    if (cl.length){
+      const c = document.createElement('i');
+      c.className = 'clash';
+      c.textContent = 'überschneidet sich mit ' +
+        cl.slice(0, 2).map(x => x.n).join(', ') + (cl.length > 2 ? ` +${cl.length - 2}` : '');
+      meta.appendChild(c);
+    }
+  }
+  mid.append(nm, meta);
+  head.append(time, mid);
+
+  const star = document.createElement('button');
+  star.className = 'star';
+  star.type = 'button';
+  star.appendChild(starIcon(marked.has(act.id)));
+  star.setAttribute('aria-label', (marked.has(act.id) ? 'Merken aufheben: ' : 'Merken: ') + act.n);
+  star.addEventListener('click', ev => {
+    ev.stopPropagation();
+    marked.has(act.id) ? marked.delete(act.id) : marked.add(act.id);
+    save(); renderAll();
+  });
+
+  const body = document.createElement('div');
+  body.className = 'body';
+  const text = act.d || INFO[act.n];
+  const p = document.createElement('p');
+  if (text){ p.textContent = text; }
+  else { p.className = 'nodesc'; p.textContent = 'Noch keine Notiz — unten direkt reinhören.'; }
+  body.appendChild(p);
+
+  (act.s || [act.n]).forEach(subject => {
+    const box = document.createElement('div');
+    box.className = 'subj';
+    const b = document.createElement('b');
+    b.textContent = subject;
+    const links = document.createElement('div');
+    links.className = 'links';
+    services.forEach(([label, url]) => {
+      const link = document.createElement('a');
+      link.href = url(subject);
+      link.target = '_blank'; link.rel = 'noopener';
+      link.textContent = label;
+      links.appendChild(link);
+    });
+
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.className = 'copy';
+    copy.textContent = 'Name kopieren';
+    copy.setAttribute('aria-label', 'Namen kopieren: ' + subject);
+    copy.addEventListener('click', ev => {
+      ev.stopPropagation();
+      copyToClipboard(subject).then(
+        () => { copy.textContent = 'kopiert'; copy.classList.add('done'); },
+        () => { copy.textContent = 'ging nicht'; }
+      );
+      setTimeout(() => {
+        copy.textContent = 'Name kopieren';
+        copy.classList.remove('done');
+      }, 1600);
+    });
+    links.appendChild(copy);
+
+    box.append(b, links);
+    body.appendChild(box);
+  });
+
+  head.addEventListener('click', () => {
+    const open = row.classList.toggle('open');
+    head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  row.append(head, star, body);
+  if (running) row.dataset.now = '1';
+  return row;
+}
+
+function renderList(){
+  const day = DAYS[dayIx];
+  const nowMin = nowOn(day);
+  listEl.innerHTML = '';
+  let shown = 0;
+
+  if (filter === 'plan'){
+    const acts = day.all.filter(a => marked.has(a.id));
+    const sec = document.createElement('section');
+    sec.className = 'stage';
+    const h = document.createElement('h2');
+    h.textContent = 'Laufplan';
+    sec.appendChild(h);
+    acts.forEach(a => { shown++; sec.appendChild(actRow(a, day, nowMin, true)); });
+    if (shown) listEl.appendChild(sec);
+  } else {
+    day.groups.forEach(group => {
+      if (hidden.has(group.stage)) return;
+      const acts = group.acts.filter(a => filter === 'all' || marked.has(a.id));
+      if (!acts.length) return;
+
+      const sec = document.createElement('section');
+      sec.className = 'stage' + (group.specials ? ' specials' : '');
+      const h = document.createElement('h2');
+      h.textContent = group.stage;
+      sec.appendChild(h);
+      const w = document.createElement('p');
+      w.className = 'where';
+      w.textContent = group.venue;
+      sec.appendChild(w);
+      if (group.note && filter === 'all'){
+        const p = document.createElement('p');
+        p.textContent = group.note;
+        sec.appendChild(p);
+      }
+      acts.forEach(a => { shown++; sec.appendChild(actRow(a, day, nowMin, false)); });
+      listEl.appendChild(sec);
+    });
+  }
+
+  if (!shown){
+    const e = document.createElement('p');
+    e.className = 'empty';
+    e.textContent = filter === 'all'
+      ? 'Alle Bühnen dieses Tages sind ausgeblendet.'
+      : 'Noch nichts gemerkt. Tippe bei einem Act auf den Stern.';
+    listEl.appendChild(e);
+  }
+
+  const mine = day.all.filter(a => marked.has(a.id)).length;
+  countEl.textContent = mine
+    ? `${mine} gemerkt · ${day.all.length} Acts`
+    : `${day.all.length} Acts`;
+
+  if (autoJump){
+    autoJump = false;
+    const target = listEl.querySelector('[data-now]');
+    if (target) target.scrollIntoView({ block:'center' });
+  }
+}
+
+function renderAll(){
+  const day = DAYS[dayIx];
+  document.documentElement.style.setProperty('--accent', day.accent);
+  document.documentElement.style.setProperty('--accent-ink', day.accentInk);
+  titleEl.innerHTML = '';
+  titleEl.append('Day ' + (dayIx + 1));
+  titleEl.appendChild(document.createElement('br'));
+  titleEl.append(day.long);
+  dateEl.innerHTML = '';
+  dateEl.append(day.date);
+  dateEl.appendChild(document.createElement('br'));
+  dateEl.append('Eupen');
+
+  [...daysEl.children].forEach((b, i) => b.setAttribute('aria-pressed', i === dayIx));
+  bAll.setAttribute('aria-pressed',  filter === 'all');
+  bMine.setAttribute('aria-pressed', filter === 'mine');
+  bPlan.setAttribute('aria-pressed', filter === 'plan');
+
+  renderStages(day);
+  renderList();
+}
+
+bAll.addEventListener('click',  () => { filter = 'all';  renderAll(); });
+bMine.addEventListener('click', () => { filter = 'mine'; renderAll(); });
+bPlan.addEventListener('click', () => { filter = 'plan'; renderAll(); });
+
+loadState();
+renderDays();
+renderAll();
+</script>
